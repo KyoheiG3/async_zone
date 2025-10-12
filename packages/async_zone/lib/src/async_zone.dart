@@ -99,7 +99,7 @@ mixin AsyncZoneElement on ComponentElement implements AsyncZoneScope {
         .whenComplete(() {
           _tasks.remove(future);
 
-          if (_tasks.isEmpty) {
+          if (_tasks.isEmpty && mounted) {
             markNeedsBuild();
           }
         });
