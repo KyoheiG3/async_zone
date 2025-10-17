@@ -9,17 +9,30 @@ abstract class AsyncZoneScope {
 
   @internal
   void showFallback(Future<dynamic> future);
+
+  @internal
+  bool canBuildChild();
 }
 
 class AsyncZone extends StatelessWidget {
-  const AsyncZone({super.key, required this.child, required this.fallback});
+  const AsyncZone({
+    super.key,
+    required this.child,
+    required this.fallback,
+    this.allowParallelBuilds = true,
+  });
 
+  final bool allowParallelBuilds;
   final Widget child;
   final Widget fallback;
 
   @override
   Widget build(BuildContext context) {
-    return AsyncZoneProvider(fallback: fallback, child: child);
+    return AsyncZoneProvider(
+      fallback: fallback,
+      allowParallelBuilds: allowParallelBuilds,
+      child: child,
+    );
   }
 
   static AsyncZoneScope of(BuildContext context) {
@@ -34,9 +47,11 @@ class AsyncZoneProvider extends InheritedWidget {
   const AsyncZoneProvider({
     super.key,
     required super.child,
+    required this.allowParallelBuilds,
     required this.fallback,
   });
 
+  final bool allowParallelBuilds;
   final Widget fallback;
 
   @override
@@ -80,6 +95,9 @@ mixin AsyncZoneElement on ComponentElement implements AsyncZoneScope {
   Widget build() {
     return _tasks.isNotEmpty ? _provider.fallback : super.build();
   }
+
+  @override
+  bool canBuildChild() => _provider.allowParallelBuilds || _tasks.isEmpty;
 
   @override
   void showFallback(Future<dynamic> future) {

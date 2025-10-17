@@ -1,28 +1,10 @@
-import 'package:async_zone/async_zone.dart';
 import 'package:flutter/widgets.dart';
 
-import 'zone_value.dart';
+import 'async_zone.dart';
+import 'empty.dart';
 
 mixin ZoneElement on ComponentElement {
   final Set<Future<dynamic>> _tasks = {};
-
-  @override
-  void performRebuild() {
-    final originalOnError = FlutterError.onError;
-
-    FlutterError.onError = (details) {
-      final exception = details.exception;
-      if (exception is! ZoneValue) {
-        originalOnError?.call(details);
-      }
-    };
-
-    try {
-      super.performRebuild();
-    } finally {
-      FlutterError.onError = originalOnError;
-    }
-  }
 
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
@@ -33,10 +15,12 @@ mixin ZoneElement on ComponentElement {
 
   @override
   Widget build() {
+    final zone = AsyncZone.of(this);
+
     try {
-      return super.build();
+      return zone.canBuildChild() ? super.build() : Empty();
     } on Future catch (future) {
-      AsyncZone.of(this).showFallback(future);
+      zone.showFallback(future);
 
       _tasks.add(future);
       future
@@ -51,7 +35,7 @@ mixin ZoneElement on ComponentElement {
             }
           });
 
-      throw ZoneValue(future);
+      return Empty();
     }
   }
 }
