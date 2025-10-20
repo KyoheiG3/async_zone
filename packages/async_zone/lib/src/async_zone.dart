@@ -39,7 +39,13 @@ class AsyncZone extends StatelessWidget {
     final element = context
         .getElementForInheritedWidgetOfExactType<AsyncZoneProvider>();
     assert(element != null, 'No AsyncZoneProvider found in context');
-    return element! as AsyncZoneScope;
+    return element as AsyncZoneScope;
+  }
+
+  static AsyncZoneScope? maybeOf(BuildContext context) {
+    final element = context
+        .getElementForInheritedWidgetOfExactType<AsyncZoneProvider>();
+    return element as AsyncZoneScope?;
   }
 }
 
