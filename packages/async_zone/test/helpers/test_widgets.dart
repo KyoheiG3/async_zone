@@ -44,40 +44,6 @@ class CachedTestWidget extends ZoneWidget {
   }
 }
 
-class InvalidateCacheTestWidget extends StatefulZoneWidget {
-  const InvalidateCacheTestWidget({
-    super.key,
-    required this.future,
-    required this.onInvalidate,
-  });
-
-  final Future<String> future;
-  final VoidCallback onInvalidate;
-
-  @override
-  State<InvalidateCacheTestWidget> createState() =>
-      _InvalidateCacheTestWidgetState();
-}
-
-class _InvalidateCacheTestWidgetState extends State<InvalidateCacheTestWidget> {
-  @override
-  Widget build(BuildContext context) {
-    final value = AsyncZone.of(context).use(widget.future);
-    return Column(
-      children: [
-        Text(value),
-        ElevatedButton(
-          onPressed: () {
-            AsyncZone.of(context).invalidateCache();
-            widget.onInvalidate();
-          },
-          child: const Text('Invalidate'),
-        ),
-      ],
-    );
-  }
-}
-
 class ThrowingZoneWidget extends ZoneWidget {
   const ThrowingZoneWidget({super.key, required this.future});
 

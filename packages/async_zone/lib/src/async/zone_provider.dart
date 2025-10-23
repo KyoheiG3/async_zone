@@ -107,12 +107,6 @@ class AsyncZoneProviderElement extends InheritedElement
   }
 
   @override
-  void invalidateCache() {
-    // Expando does not have a clear method
-    // Entries are automatically garbage collected when the key (Future) is no longer referenced
-  }
-
-  @override
   void unmount() {
     _tasks.clear();
     super.unmount();

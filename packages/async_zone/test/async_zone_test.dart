@@ -181,55 +181,6 @@ void main() {
           expect(find.text('Result-Result'), findsOneWidget);
         },
       );
-
-      testWidgets(
-        'Given a cached value, When invalidateCache() is called, Then cache should be cleared',
-        (tester) async {
-          // Given
-          var callCount = 0;
-          Future<String> createFuture() {
-            return Future.delayed(const Duration(milliseconds: 50), () {
-              callCount++;
-              return 'Value $callCount';
-            });
-          }
-
-          var currentFuture = createFuture();
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: StatefulBuilder(
-                builder: (context, setState) {
-                  return AsyncZone(
-                    fallback: const Text('Loading...'),
-                    child: InvalidateCacheTestWidget(
-                      future: currentFuture,
-                      onInvalidate: () {
-                        currentFuture = createFuture();
-                        setState(() {});
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-
-          await tester.pump(const Duration(milliseconds: 50));
-
-          expect(find.text('Value 1'), findsOneWidget);
-          expect(callCount, 1);
-
-          // When - invalidate cache and create new future
-          await tester.tap(find.byType(ElevatedButton));
-          await tester.pump(const Duration(milliseconds: 50));
-          await tester.pump();
-
-          // Then - should show new value
-          expect(find.text('Value 2'), findsOneWidget);
-          expect(callCount, 2);
-        },
-      );
     });
 
     group('when widget rebuilds', () {

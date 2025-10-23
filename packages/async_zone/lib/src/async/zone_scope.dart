@@ -1,6 +1,5 @@
 abstract class AsyncZoneScope {
   T use<T>(Future<T> future);
-  void invalidateCache();
 }
 
 abstract class AsyncZoneProviderScope {
