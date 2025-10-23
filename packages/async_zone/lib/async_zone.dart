@@ -1,2 +1,4 @@
-export 'src/async_zone.dart';
+export 'src/async/zone.dart';
+export 'src/error/zone.dart';
+export 'src/error_boundary.dart';
 export 'src/framework.dart';

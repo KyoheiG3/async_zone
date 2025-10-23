@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import 'async_zone.dart';
-import 'empty.dart';
+import 'async/zone_provider.dart';
+import 'error/zone_provider.dart';
+import 'foundation/empty.dart';
 
 mixin ZoneElement on ComponentElement {
   final Set<Future<dynamic>> _tasks = {};
+  dynamic _error;
 
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
@@ -15,28 +17,58 @@ mixin ZoneElement on ComponentElement {
 
   @override
   Widget build() {
-    final zone = AsyncZone.of(this);
+    if (_error != null) {
+      throw _error;
+    }
 
-    try {
-      return zone.canBuildChild() ? super.build() : Empty();
-    } on Future catch (future) {
-      zone.showFallback(future);
+    final asyncZone = AsyncZoneProvider.maybeOf(this);
+    final errorZone = ErrorZoneProvider.maybeOf(this);
+
+    void handleFuture(Future future) {
+      asyncZone?.showFallback(future);
+
+      void completeHandler() {
+        _tasks.remove(future);
+
+        if (_tasks.isEmpty && mounted) {
+          markNeedsBuild();
+        }
+      }
 
       _tasks.add(future);
-      future
-          .onError((_, _) {
-            // Do nothing
-          })
-          .whenComplete(() {
-            _tasks.remove(future);
-
-            if (_tasks.isEmpty && mounted) {
-              markNeedsBuild();
-            }
-          });
-
-      return Empty();
+      if (errorZone != null) {
+        future.then((_) => completeHandler()).onError(errorZone.markShowError);
+      } else {
+        future
+            .onError((error, _) => _error = error)
+            .whenComplete(completeHandler);
+      }
     }
+
+    try {
+      return (asyncZone?.canBuildChild() ?? true) ? super.build() : Empty();
+    } on Future catch (future) {
+      handleFuture(future);
+    } catch (error, stackTrace) {
+      if (errorZone == null) {
+        rethrow;
+      }
+
+      if (errorZone.isDuringPerformRebuild) {
+        errorZone.markShowError(error, stackTrace);
+      } else {
+        handleFuture(Future.error(error, stackTrace));
+      }
+    }
+
+    return Empty();
+  }
+
+  @override
+  void unmount() {
+    _tasks.clear();
+    _error = null;
+    super.unmount();
   }
 }
 

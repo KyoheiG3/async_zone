@@ -106,3 +106,15 @@ class _StatefulThrowingWidgetState extends State<StatefulThrowingWidget> {
     return Text(value);
   }
 }
+
+/// Widget that directly throws Future without using AsyncZone.of()
+class DirectThrowingZoneWidget extends ZoneWidget {
+  const DirectThrowingZoneWidget({super.key, required this.future});
+
+  final Future future;
+
+  @override
+  Widget build(BuildContext context) {
+    throw future;
+  }
+}

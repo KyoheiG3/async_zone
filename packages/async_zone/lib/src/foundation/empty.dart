@@ -4,7 +4,7 @@ class Empty extends SingleChildRenderObjectWidget {
   const Empty({super.key});
 
   @override
-  RenderObject createRenderObject(context) {
+  RenderObject createRenderObject(BuildContext context) {
     return _RenderNoop();
   }
 }

@@ -266,5 +266,34 @@ void main() {
         },
       );
     });
+
+    group('when AsyncZone.of() is called without AsyncZone', () {
+      testWidgets(
+        'Given no AsyncZone ancestor, When of() is called, Then should throw FlutterError',
+        (tester) async {
+          // Given - a widget without AsyncZone ancestor
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      AsyncZone.of(context);
+                    },
+                    child: const Text('Call AsyncZone.of'),
+                  );
+                },
+              ),
+            ),
+          );
+
+          // When - of() is called
+          await tester.tap(find.text('Call AsyncZone.of'));
+
+          // Then - should throw FlutterError with appropriate message
+          expect(tester.takeException(), isA<FlutterError>());
+        },
+      );
+    });
   });
 }
