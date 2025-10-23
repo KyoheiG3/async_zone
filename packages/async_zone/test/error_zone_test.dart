@@ -186,6 +186,108 @@ void main() {
     });
   });
 
+  group('ErrorBoundary.of()', () {
+    testWidgets('should throw FlutterError when no ErrorBoundary in context', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () {
+                  ErrorBoundary.of(context);
+                },
+                child: const Text('Call of()'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        () => ErrorBoundary.of(
+          tester.element(find.text('Call of()')),
+        ),
+        throwsA(isA<FlutterError>()),
+      );
+    });
+
+    testWidgets(
+      'should call showBoundary to programmatically trigger error state',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ErrorBoundary(
+              builder: (context, error, reset) {
+                return Text('Error: $error');
+              },
+              child: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      ErrorBoundary.of(
+                        context,
+                      ).showBoundary('Manual error', StackTrace.current);
+                    },
+                    child: const Text('Show Error'),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        expect(find.text('Show Error'), findsOneWidget);
+
+        // Call showError programmatically
+        await tester.tap(find.text('Show Error'));
+        await tester.pump();
+
+        expect(find.text('Error: Manual error'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'should call resetBoundary to programmatically reset error state',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ErrorBoundary(
+              builder: (context, error, reset) {
+                return Column(
+                  children: [
+                    Text('Error: $error'),
+                    ElevatedButton(
+                      onPressed: () {
+                        ErrorBoundary.of(context).resetBoundary();
+                      },
+                      child: const Text('Reset via Scope'),
+                    ),
+                  ],
+                );
+              },
+              child: const ThrowingWidget(message: 'Initial error'),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        expect(find.text('Error: Initial error'), findsOneWidget);
+
+        // Call resetBoundary programmatically
+        await tester.tap(find.text('Reset via Scope'));
+        await tester.pump();
+
+        // Should throw again after reset (because child still throws)
+        expect(find.text('Error: Initial error'), findsOneWidget);
+      },
+    );
+  });
+
   group('StatefulErrorZone', () {
     testWidgets('should catch errors with StatefulErrorZone', (tester) async {
       await tester.pumpWidget(

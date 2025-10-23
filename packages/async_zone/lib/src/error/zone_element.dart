@@ -1,7 +1,23 @@
 import 'package:flutter/widgets.dart';
 
+import 'zone_controller.dart';
 import 'zone_provider.dart';
-import 'zone_widget.dart';
+
+mixin ErrorZoneWidget<T> on Widget {
+  final _controller = ErrorZoneController<T>();
+
+  void componentDidCatch(Object error, StackTrace stackTrace) {}
+
+  T getDerivedStateFromError(Object? error);
+
+  void resetErrorBoundary() => _controller.resetError();
+
+  void showErrorBoundary(Object error, [StackTrace? stackTrace]) {
+    _controller.showError(error, stackTrace);
+  }
+
+  T get state => _controller.state;
+}
 
 mixin ErrorZoneElement<T> on ComponentElement {
   @override
@@ -42,17 +58,18 @@ mixin ErrorZoneElement<T> on ComponentElement {
 
   @override
   Widget build() {
-    widget.controller.attach(
+    widget._controller.attach(
       onReset: () => _updateErrorState(null),
+      onShowError: (error, stackTrace) {
+        _updateErrorState(error);
+        widget.componentDidCatch(error, stackTrace);
+      },
       stateGetter: () => _state,
     );
 
     return ErrorZoneProvider(
       canShowError: () => _isDuringPerformRebuild,
-      onError: (error, stackTrace) {
-        _updateErrorState(error);
-        widget.componentDidCatch(error, stackTrace);
-      },
+      onError: widget._controller.showError,
       child: super.build(),
     );
   }

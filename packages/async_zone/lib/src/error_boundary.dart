@@ -22,8 +22,28 @@ class ErrorBoundary extends ErrorZone<ErrorBoundaryState> {
 
   final ErrorFallbackBuilder builder;
   final void Function(Object error, StackTrace stackTrace)? onError;
-  final void Function([Object? arg])? onReset;
+  final void Function(Object? arg)? onReset;
   final Widget child;
+
+  static ErrorBoundaryProvider of(BuildContext context) {
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<ErrorBoundaryProvider>();
+
+    if (provider == null) {
+      throw FlutterError.fromParts([
+        ErrorSummary('No ErrorBoundary widget found in context.'),
+        ErrorDescription(
+          'ErrorBoundary.of() was called with a context that does not contain an ErrorBoundary widget.',
+        ),
+        ErrorHint(
+          'Ensure that the context passed to ErrorBoundary.of() is a descendant of an ErrorBoundary widget.',
+        ),
+        context.describeElement('The context used was'),
+      ]);
+    }
+
+    return provider;
+  }
 
   @override
   void componentDidCatch(Object error, StackTrace stackTrace) {
@@ -37,14 +57,35 @@ class ErrorBoundary extends ErrorZone<ErrorBoundaryState> {
 
   @override
   Widget build(BuildContext context) {
-    final error = state.error;
-    if (error != null) {
-      return builder(context, error, ([arg]) {
-        resetErrorBoundary();
-        onReset?.call(arg);
-      });
-    }
+    return ErrorBoundaryProvider(
+      resetBoundary: resetErrorBoundary,
+      showBoundary: showErrorBoundary,
+      builder: (context) {
+        final error = state.error;
+        if (error != null) {
+          return builder(context, error, ([arg]) {
+            resetErrorBoundary();
+            onReset?.call(arg);
+          });
+        }
 
-    return child;
+        return child;
+      },
+    );
   }
+}
+
+class ErrorBoundaryProvider extends InheritedWidget {
+  ErrorBoundaryProvider({
+    super.key,
+    required WidgetBuilder builder,
+    required this.resetBoundary,
+    required this.showBoundary,
+  }) : super(child: Builder(builder: builder));
+
+  final void Function() resetBoundary;
+  final void Function(Object error, [StackTrace? stackTrace]) showBoundary;
+
+  @override
+  bool updateShouldNotify(ErrorBoundaryProvider oldWidget) => false;
 }

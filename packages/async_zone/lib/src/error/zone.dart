@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
 import 'zone_element.dart';
-import 'zone_widget.dart';
 
 abstract class ErrorZone<T> extends StatelessWidget with ErrorZoneWidget<T> {
   ErrorZone({super.key});
