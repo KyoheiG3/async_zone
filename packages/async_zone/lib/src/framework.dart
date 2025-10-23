@@ -54,7 +54,7 @@ mixin ZoneElement on ComponentElement {
         rethrow;
       }
 
-      if (errorZone.isDuringPerformRebuild) {
+      if (errorZone.canShowError) {
         errorZone.markShowError(error, stackTrace);
       } else {
         handleFuture(Future.error(error, stackTrace));

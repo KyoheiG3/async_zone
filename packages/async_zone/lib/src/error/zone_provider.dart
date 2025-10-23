@@ -1,19 +1,19 @@
 import 'package:flutter/widgets.dart';
 
 abstract class ErrorZoneProviderScope {
-  bool get isDuringPerformRebuild;
+  bool get canShowError;
   void markShowError(Object error, StackTrace stackTrace);
 }
 
 class ErrorZoneProvider extends InheritedWidget {
   const ErrorZoneProvider({
     super.key,
-    required this.isDuringPerformRebuild,
+    required this.canShowError,
     required this.onError,
     required super.child,
   });
 
-  final bool Function() isDuringPerformRebuild;
+  final bool Function() canShowError;
   final Function(Object error, StackTrace stackTrace) onError;
 
   static ErrorZoneProviderScope? maybeOf(BuildContext context) {
@@ -36,7 +36,7 @@ class ErrorZoneProviderElement extends InheritedElement
   final ErrorZoneProvider _widget;
 
   @override
-  bool get isDuringPerformRebuild => _widget.isDuringPerformRebuild();
+  bool get canShowError => _widget.canShowError();
 
   @override
   void markShowError(Object error, StackTrace stackTrace) {

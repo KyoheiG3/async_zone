@@ -48,7 +48,7 @@ mixin ErrorZoneElement<T> on ComponentElement {
     );
 
     return ErrorZoneProvider(
-      isDuringPerformRebuild: () => _isDuringPerformRebuild,
+      canShowError: () => _isDuringPerformRebuild,
       onError: (error, stackTrace) {
         _updateErrorState(error);
         widget.componentDidCatch(error, stackTrace);
