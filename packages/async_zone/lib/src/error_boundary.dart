@@ -57,33 +57,33 @@ class ErrorBoundary extends ErrorZone<ErrorBoundaryState> {
 
   @override
   Widget build(BuildContext context) {
-    return ErrorBoundaryProvider(
-      resetBoundary: resetErrorBoundary,
-      showBoundary: showErrorBoundary,
-      builder: (context) {
-        final error = state.error;
-        if (error != null) {
-          return builder(context, error, ([arg]) {
-            resetErrorBoundary();
-            onReset?.call(arg);
-          });
-        }
+    void resetBoundary([Object? arg]) {
+      resetErrorBoundary();
+      onReset?.call(arg);
+    }
 
-        return child;
-      },
+    final error = state.error;
+    if (error != null) {
+      return builder(context, error, resetBoundary);
+    }
+
+    return ErrorBoundaryProvider(
+      resetBoundary: resetBoundary,
+      showBoundary: showErrorBoundary,
+      child: child,
     );
   }
 }
 
 class ErrorBoundaryProvider extends InheritedWidget {
-  ErrorBoundaryProvider({
+  const ErrorBoundaryProvider({
     super.key,
-    required WidgetBuilder builder,
     required this.resetBoundary,
     required this.showBoundary,
-  }) : super(child: Builder(builder: builder));
+    required super.child,
+  });
 
-  final void Function() resetBoundary;
+  final void Function([Object? arg]) resetBoundary;
   final void Function(Object error, [StackTrace? stackTrace]) showBoundary;
 
   @override
