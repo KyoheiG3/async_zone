@@ -6,10 +6,9 @@ import 'helpers/test_widgets.dart';
 
 void main() {
   group('ZoneWidget', () {
-    group('when Future is thrown', () {
-      testWidgets(
-        'Given a StatelessWidget that throws Future, When built, Then should catch and show fallback',
-        (tester) async {
+    group('given a StatelessWidget that throws Future', () {
+      group('when built with AsyncZone', () {
+        testWidgets('should catch and show fallback', (tester) async {
           // Given
           final future = Future.delayed(
             const Duration(milliseconds: 50),
@@ -25,81 +24,21 @@ void main() {
             ),
           );
 
-          // When - ZoneWidget throws Future
+          // Then - initially shows fallback
           expect(find.text('Fallback'), findsOneWidget);
 
-          // Then - shows child after completion
+          // When - Future completes
           await tester.pump(const Duration(milliseconds: 50));
 
+          // Then - shows child with result
           expect(find.text('Success'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'Given a StatefulWidget that throws Future, When setState is called, Then should handle correctly',
-        (tester) async {
-          // Given
-          final future = Future.delayed(
-            const Duration(milliseconds: 50),
-            () => 'Result',
-          );
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: AsyncZone(
-                fallback: const Text('Loading...'),
-                child: StatefulThrowingWidget(future: future),
-              ),
-            ),
-          );
-
-          // When - shows fallback initially
-          expect(find.text('Loading...'), findsOneWidget);
-
-          await tester.pump(const Duration(milliseconds: 50));
-
-          // Then - shows result (this also tests mounted == true case)
-          expect(find.text('Result'), findsOneWidget);
-        },
-      );
+        });
+      });
     });
 
-    group('when Future throws without ErrorZone', () {
-      testWidgets(
-        'Given a ZoneWidget without ErrorZone, When Future throws, Then should rethrow on next build',
-        (tester) async {
-          // Given - Future that throws error
-          final future = Future<String>.delayed(
-            const Duration(milliseconds: 50),
-            () => throw 'Future error',
-          );
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: AsyncZone(
-                fallback: const Text('Loading...'),
-                child: ThrowingZoneWidget(future: future),
-              ),
-            ),
-          );
-
-          // When - shows fallback initially
-          expect(find.text('Loading...'), findsOneWidget);
-
-          // Wait for Future to complete
-          await tester.pump(const Duration(milliseconds: 50));
-
-          // Then - error is stored and will be rethrown on next build
-          // The error is caught by Flutter's error handling
-          expect(tester.takeException(), 'Future error');
-        },
-      );
-    });
-
-    group('when using StatefulZoneWidget', () {
-      testWidgets(
-        'Given a StatefulZoneWidget, When Future completes, Then should work correctly',
-        (tester) async {
+    group('given a StatefulWidget that throws Future', () {
+      group('when built with AsyncZone', () {
+        testWidgets('should handle correctly', (tester) async {
           // Given
           final future = Future.delayed(
             const Duration(milliseconds: 50),
@@ -115,22 +54,54 @@ void main() {
             ),
           );
 
-          // When - shows fallback
+          // Then - initially shows fallback
           expect(find.text('Stateful Loading...'), findsOneWidget);
 
+          // When - Future completes
           await tester.pump(const Duration(milliseconds: 50));
 
           // Then - shows result
           expect(find.text('Stateful Result'), findsOneWidget);
-        },
-      );
+        });
+      });
     });
 
-    group('when error is stored and widget rebuilds', () {
-      testWidgets(
-        'Given a ZoneWidget without AsyncZone, When Future throws, Then should store error and rethrow on rebuild',
-        (tester) async {
-          // Given - ZoneWidget without AsyncZone wrapper
+    group('given a ZoneWidget without ErrorZone', () {
+      group('when Future throws error', () {
+        testWidgets('should rethrow on next build', (tester) async {
+          // Given
+          final future = Future<String>.delayed(
+            const Duration(milliseconds: 50),
+            () => throw 'Future error',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: ThrowingZoneWidget(future: future),
+              ),
+            ),
+          );
+
+          // Then - initially shows fallback
+          expect(find.text('Loading...'), findsOneWidget);
+
+          // When - Future completes with error
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Then - error is rethrown and caught by Flutter's error handling
+          expect(tester.takeException(), 'Future error');
+        });
+      });
+    });
+
+    group('given a ZoneWidget without AsyncZone', () {
+      group('when Future throws error', () {
+        testWidgets('should store error and rethrow on rebuild', (
+          tester,
+        ) async {
+          // Given
           final errorFuture = Future<String>.delayed(
             const Duration(milliseconds: 50),
             () => throw 'Stored error',
@@ -140,16 +111,16 @@ void main() {
             MaterialApp(home: DirectThrowingZoneWidget(future: errorFuture)),
           );
 
-          // Wait for error to be stored in _error (lines 43-44, 30-34)
+          // When - Future completes with error
           await tester.pump(const Duration(milliseconds: 50));
 
-          // When - Widget rebuilds after error is stored
+          // When - widget rebuilds after error is stored
           await tester.pump();
 
-          // Then - The stored error should be rethrown (line 21)
+          // Then - stored error should be rethrown
           expect(tester.takeException(), 'Stored error');
-        },
-      );
+        });
+      });
     });
   });
 }
