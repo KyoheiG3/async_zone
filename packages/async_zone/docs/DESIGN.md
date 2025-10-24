@@ -1,0 +1,256 @@
+# AsyncZone Design Specification
+
+**English** | [日本語](DESIGN.ja.md)
+
+## Overview
+
+AsyncZone is a Flutter library that provides React Suspense-like async handling and Error Boundary functionality. It allows throwing `Future` objects from the build method and catching them at a higher level to display fallback UI while loading.
+
+## Architecture
+
+### Core Components
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Application                         │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────┐    │
+│  │      ErrorZone (ErrorBoundary)                  │    │
+│  │  ┌───────────────────────────────────────────┐  │    │
+│  │  │       AsyncZone (Suspense)                │  │    │
+│  │  │  ┌─────────────────────────────────────┐  │  │    │
+│  │  │  │        ZoneWidget                   │  │  │    │
+│  │  │  │  - Throws Future from build()       │  │  │    │
+│  │  │  │  - Handles async operations         │  │  │    │
+│  │  │  └─────────────────────────────────────┘  │  │    │
+│  │  └───────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Module Structure
+
+```
+lib/src/
+├── async/                   # AsyncZone (Suspense) implementation
+│   ├── zone.dart            # Public API
+│   ├── zone_provider.dart   # InheritedWidget & Element
+│   └── zone_scope.dart      # Interface definitions
+├── error/                   # Error Boundary implementation
+│   ├── zone.dart            # Base classes for ErrorZone
+│   ├── zone_widget.dart     # ErrorZoneWidget mixin
+│   ├── zone_element.dart    # ErrorZoneElement mixin
+│   ├── zone_controller.dart # State management controller
+│   └── zone_provider.dart   # Error propagation provider
+├── foundation/
+│   └── empty.dart           # Empty widget for placeholder
+├── framework.dart           # ZoneWidget/ZoneElement base
+└── error_boundary.dart      # User-facing ErrorBoundary widget
+```
+
+## Design Patterns
+
+### 1. Async Handling (Suspense-like)
+
+Widgets throw `Future` objects, which are caught by `ZoneElement` and handled by parent `AsyncZone`.
+
+```dart
+class MyWidget extends ZoneWidget {
+  @override
+  Widget build(BuildContext context) {
+    throw fetchData(); // Suspend until Future completes
+  }
+}
+```
+
+**Key mechanism**: ZoneElement catches thrown Futures, notifies AsyncZone to show fallback, and rebuilds when complete.
+
+### 2. Cache Management with Expando
+
+Uses weak references for automatic garbage collection:
+
+```dart
+final _cache = Expando<Object>('AsyncZone cache');
+final _errors = Expando<Object>('AsyncZone errors');
+```
+
+**Benefits**:
+
+- Automatic GC when Future is no longer referenced
+- No memory leaks
+- No manual cleanup needed
+
+**Tradeoff**: Cannot manually clear cache (by design).
+
+### 3. Error Boundary
+
+Catches errors from child widgets and displays fallback UI:
+
+```dart
+ErrorBoundary(
+  builder: (context, error, reset) => ErrorView(error),
+  onError: (error, stackTrace) => log(error),
+  child: MyWidget(),
+)
+```
+
+**Controller Pattern**: Widget holds controller (ephemeral), Element attaches to it (persistent).
+
+## API Design
+
+### AsyncZone
+
+```dart
+AsyncZone(
+  allowParallelBuilds: true,
+  fallback: LoadingWidget(),
+  child: MyWidget(),
+)
+
+// Access from descendants
+final scope = AsyncZone.of(context);
+final data = scope.use(fetchData());
+```
+
+### ErrorBoundary
+
+```dart
+ErrorBoundary(
+  builder: (context, error, resetErrorBoundary) {
+    return ErrorView(
+      error: error,
+      onRetry: () => resetErrorBoundary(),
+    );
+  },
+  onError: (error, stackTrace) => log(error),
+  child: MyWidget(),
+)
+```
+
+### ZoneWidget
+
+```dart
+class MyWidget extends ZoneWidget {
+  @override
+  Widget build(BuildContext context) {
+    throw fetchData();  // Suspend until complete
+  }
+}
+
+// With custom error handling
+class MyErrorWidget extends ErrorZone<MyState> {
+  @override
+  MyState getDerivedStateFromError(Object? error) => MyState(error: error);
+
+  @override
+  Widget build(BuildContext context) {
+    return state.error != null ? ErrorView() : NormalView();
+  }
+}
+```
+
+## Error Handling Strategy
+
+| Scenario             | Has ErrorZone? | Behavior                                   |
+| -------------------- | -------------- | ------------------------------------------ |
+| Sync error           | Yes            | Caught by ErrorZone                        |
+| Sync error           | No             | Rethrow (Flutter handles)                  |
+| Async error (Future) | Yes            | Caught by ErrorZone after Future completes |
+| Async error (Future) | No             | Stored, thrown on next build               |
+
+## Performance Considerations
+
+### Memory Management
+
+- **Expando**: Automatic GC prevents memory leaks
+- **unmount()**: Clear task references
+
+### Rendering Optimization
+
+- **Skip child updates**: Prevent ErrorWidget flash during loading (see FAQ Q1)
+- **Double rebuild**: Immediate state reflection (see FAQ Q6)
+- **Parallel builds**: Control with `allowParallelBuilds`
+
+### Build Optimization
+
+```dart
+// ✅ Good: Reuse Future instances
+final _dataFuture = fetchData();
+throw _dataFuture;  // Cache hit
+
+// ❌ Bad: Create new Future every build
+throw fetchData();  // Cache miss
+```
+
+## Frequently Asked Questions (FAQ)
+
+### Q1: Why skip child updates in `updateChild` when tasks are running?
+
+Prevents ErrorWidget from flashing for one frame before AsyncZone shows the fallback.
+
+**Timeline with skip**:
+
+- Frame N: Future thrown → Old child remains (no flash)
+- Frame N+1: AsyncZone shows fallback
+
+### Q2: Why call `controller.attach()` on every build?
+
+Element is persistent, but Widget is rebuilt frequently. Each new Widget has a new controller, so Element must re-attach.
+
+**Lifecycle**:
+
+- Element: Created once, lives until unmount
+- Widget: New instance on every rebuild
+
+### Q3: Why use `postFrameCallback` instead of calling `markNeedsBuild()` directly?
+
+The child widget calling `showFallback()` is still building. Synchronous `markNeedsBuild()` would cause:
+
+```
+setState() or markNeedsBuild() called during build
+```
+
+`postFrameCallback` waits until the current frame completes.
+
+### Q4: Why doesn't `use()` cache errors?
+
+**Separation of Concerns**:
+
+- `use()`: Simple cache lookup, throws Future
+- `showFallback()`: Complete state management (success + error)
+
+Error caching is `showFallback()`'s responsibility. This makes error handling logic centralized and easier to understand.
+
+### Q5: Why rebuild twice in `performRebuild()`?
+
+To immediately reflect error state changes in the same frame.
+
+**Without double rebuild**: Error → Old UI (1 frame) → Fallback
+**With double rebuild**: Error → Fallback (same frame)
+
+This prevents visual delay when errors occur.
+
+## Related Patterns
+
+### React Suspense
+
+- Throwing promises from render
+- Fallback UI during loading
+- Automatic state management
+
+### Flutter Patterns
+
+- **InheritedWidget**: Context propagation
+- **Element lifecycle**: Persistent state
+- **Mixin composition**: Reusable behaviors
+
+## Conclusion
+
+AsyncZone provides declarative async and error handling in Flutter:
+
+1. **Simplicity**: Throw Future, catch at boundary
+2. **Safety**: Automatic memory management
+3. **Performance**: Optimized rendering
+4. **Composability**: Mix async and error boundaries
+
+The design prioritizes developer experience while maintaining Flutter's performance characteristics.
