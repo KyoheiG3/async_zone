@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語**
 
-React の Suspense と Error Boundaries にインスパイアされた、宣言的な非同期処理とエラーバウンダリーを提供する Flutter パッケージです。
+React の Suspense と Error Boundary にインスパイアされた、宣言的な非同期処理とエラーバウンダリーを提供する Flutter パッケージです。
 
 ## 機能
 
@@ -65,7 +65,7 @@ class MyDataWidget extends ZoneWidget {
 }
 ```
 
-### ErrorBoundary - エラーの優雅な処理（React Error Boundaries にインスパイア）
+### ErrorBoundary - エラーの優雅な処理（React Error Boundary にインスパイア）
 
 ウィジェットツリー内のエラーをキャッチしてフォールバック UI を表示：
 
@@ -248,7 +248,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 ### ErrorBoundary
 
-`ErrorBoundary` は子ウィジェットからのエラーをキャッチし、クラッシュする代わりにフォールバック UI を表示します。React の Error Boundaries にインスパイアされています。
+`ErrorBoundary` は子ウィジェットからのエラーをキャッチし、クラッシュする代わりにフォールバック UI を表示します。React の Error Boundary にインスパイアされています。
 
 **重要:** `ZoneWidget` または `StatefulZoneWidget` の `build()` メソッドから throw されたエラーのみがキャッチされます。
 
@@ -457,5 +457,5 @@ class MyWidget extends ZoneWidget {
 このパッケージは以下からインスパイアされています：
 
 - 非同期処理のための React の Suspense
-- エラーハンドリングのための React の Error Boundaries
+- エラーハンドリングのための React の Error Boundary
 - Flutter の宣言的 UI 原則

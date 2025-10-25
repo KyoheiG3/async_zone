@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-A Flutter package that provides declarative async operations and error boundaries, inspired by React's Suspense and Error Boundaries.
+A Flutter package that provides declarative async operations and error boundaries, inspired by React's Suspense and Error Boundary.
 
 ## Features
 
@@ -65,7 +65,7 @@ class MyDataWidget extends ZoneWidget {
 }
 ```
 
-### ErrorBoundary - Handle Errors Gracefully (inspired by React Error Boundaries)
+### ErrorBoundary - Handle Errors Gracefully (inspired by React Error Boundary)
 
 Catch errors in your widget tree and display fallback UI:
 
@@ -248,7 +248,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 ### ErrorBoundary
 
-`ErrorBoundary` catches errors from child widgets and displays fallback UI instead of crashing. This is inspired by React's Error Boundaries.
+`ErrorBoundary` catches errors from child widgets and displays fallback UI instead of crashing. This is inspired by React's Error Boundary.
 
 **Important:** Only errors thrown from the `build()` method of `ZoneWidget` or `StatefulZoneWidget` will be caught.
 
@@ -457,5 +457,5 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 This package is inspired by:
 
 - React's Suspense for async operations
-- React's Error Boundaries for error handling
+- React's Error Boundary for error handling
 - Flutter's declarative UI principles
