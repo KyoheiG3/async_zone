@@ -123,4 +123,43 @@ void main() {
       });
     });
   });
+
+  group('ZoneBuilder', () {
+    testWidgets('should work with builder pattern', (tester) async {
+      // Given
+      final future = Future.delayed(
+        const Duration(milliseconds: 50),
+        () => 'Success',
+      );
+      var callCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AsyncZone(
+            fallback: const Text('Loading...'),
+            child: ZoneBuilder(
+              builder: (context) {
+                callCount++;
+                if (callCount == 1) {
+                  throw future;
+                }
+                return const Text('Content');
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Then - initially shows fallback
+      expect(find.text('Loading...'), findsOneWidget);
+
+      // When - Future completes
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
+
+      // Then - shows content
+      expect(find.text('Content'), findsOneWidget);
+      expect(callCount, 2);
+    });
+  });
 }

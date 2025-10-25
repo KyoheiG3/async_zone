@@ -75,3 +75,48 @@ class StatefulZoneElement extends StatefulElement with ZoneElement {
   /// Creates a [StatefulZoneElement] for the given [widget].
   StatefulZoneElement(super.widget);
 }
+
+/// A widget that builds itself using a builder callback with zone-based async handling.
+///
+/// [ZoneBuilder] is a convenience widget that combines [ZoneWidget] with a builder pattern,
+/// allowing you to create zone-aware widgets inline without defining a separate class.
+///
+/// When a [Future] is thrown within the [builder], the zone mechanism catches it and
+/// coordinates with [AsyncZone] to show fallback UI while the operation is pending.
+///
+/// Example:
+/// ```dart
+/// AsyncZone(
+///   fallback: const CircularProgressIndicator(),
+///   child: ZoneBuilder(
+///     builder: (context) {
+///       // Throwing a Future triggers async handling
+///       throw fetchData();
+///     },
+///   ),
+/// )
+/// ```
+///
+/// This is equivalent to creating a custom [ZoneWidget] subclass but more concise
+/// for simple use cases.
+///
+/// See also:
+/// - [ZoneWidget], the base class for zone-aware widgets.
+/// - [AsyncZone], which provides fallback UI during async operations.
+class ZoneBuilder extends ZoneWidget {
+  /// Creates a [ZoneBuilder].
+  ///
+  /// The [builder] parameter must not be null and is called to obtain the child widget.
+  const ZoneBuilder({super.key, required this.builder});
+
+  /// Called to obtain the child widget.
+  ///
+  /// This function is called whenever this widget is included in its parent's build.
+  /// Throwing a [Future] within this builder will trigger zone-based async handling.
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return builder(context);
+  }
+}
