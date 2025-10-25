@@ -7,7 +7,7 @@ A Flutter package that provides declarative async operations and error boundarie
 ## Features
 
 - 🔄 **AsyncZone**: Declarative async operations with automatic fallback UI
-- 🛡️ **ErrorBoundary**: Catch and handle errors in widget trees
+- 🛡️ **ErrorZoneWidget**: Custom error handling with React-like lifecycle methods
 - 🎯 **ZoneWidget**: Seamless integration of async and error handling
 - 🚀 **Simple API**: Minimal boilerplate with powerful capabilities
 - ⚡ **Performance**: Efficient caching and rebuild optimization
@@ -65,30 +65,48 @@ class MyDataWidget extends ZoneWidget {
 }
 ```
 
-### ErrorBoundary - Handle Errors Gracefully (inspired by React Error Boundary)
+### ErrorZoneWidget - Custom Error Handling (inspired by React Error Boundary)
 
-Catch errors in your widget tree and display fallback UI:
+Create custom error handling with React-like lifecycle methods:
 
 ```dart
 import 'package:async_zone/async_zone.dart';
 
-ErrorBoundary(
-  builder: (context, error, reset) => Column(
-    children: [
-      Text('Error: $error'),
-      ElevatedButton(
-        onPressed: reset,
-        child: Text('Retry'),
-      ),
-    ],
-  ),
-  onError: (error, stackTrace) {
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  const MyErrorZone({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
     // Log error to your error reporting service
     print('Error caught: $error');
-  },
-  child: MyWidget(),
-)
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.error != null) {
+      return Column(
+        children: [
+          Text('Error: ${state.error}'),
+          ElevatedButton(
+            onPressed: resetErrorBoundary,
+            child: Text('Retry'),
+          ),
+        ],
+      );
+    }
+    return child;
+  }
+}
 ```
+
+> **Note:** For a simpler error boundary implementation, check out the [error_boundary](https://pub.dev/packages/error_boundary) package.
 
 ## Core Concepts
 
@@ -246,19 +264,6 @@ class _MyWidgetState extends State<MyWidget> {
 - **`use()`** (Recommended): Automatic caching and simpler to use
 - **Direct `throw`**: More control but requires careful state management
 
-### ErrorBoundary
-
-`ErrorBoundary` catches errors from child widgets and displays fallback UI instead of crashing. This is inspired by React's Error Boundary.
-
-**Important:** Only errors thrown from the `build()` method of `ZoneWidget` or `StatefulZoneWidget` will be caught.
-
-**Key Features:**
-
-- Declarative error handling
-- Reset capability to recover from errors
-- Error callbacks for logging/reporting
-- Programmatic error triggering via `showBoundary`
-
 ## Advanced Usage
 
 ### Parallel vs Sequential Builds
@@ -275,20 +280,6 @@ AsyncZone(
 
 - `true` (default): Child widgets continue building even with pending operations
 - `false`: All child builds blocked while any operation is pending
-
-### Accessing Error Boundary from Descendants
-
-You can manually trigger error boundaries from anywhere in the tree:
-
-```dart
-final provider = ErrorBoundary.of(context);
-
-// Manually show an error
-provider.showBoundary(Exception('Something went wrong'));
-
-// Reset the error boundary
-provider.resetBoundary();
-```
 
 ### Custom Error Zones
 
@@ -360,7 +351,7 @@ This gives you full control over the element lifecycle.
 Check out the [example](example/) directory for complete examples including:
 
 - Basic async operations
-- Error boundary usage
+- Custom error zones with ErrorZoneWidget
 - Nested async zones
 - Error recovery patterns
 - Integration with state management
@@ -379,25 +370,22 @@ Check out the [example](example/) directory for complete examples including:
 
 - `AsyncZone.of(context)` - Returns `AsyncZoneScope` for consuming futures
 
-### ErrorBoundary
+### ErrorZoneWidget / StatefulErrorZoneWidget
 
-| Property  | Type                   | Description                               |
-| --------- | ---------------------- | ----------------------------------------- |
-| `builder` | `ErrorFallbackBuilder` | Builder for fallback UI when error occurs |
-| `child`   | `Widget`               | Child widget to wrap                      |
-| `onError` | `Function?`            | Callback when error is caught             |
-| `onReset` | `Function?`            | Callback when boundary is reset           |
+Abstract base classes for widgets with custom error handling capabilities.
 
-**Methods:**
-
-- `ErrorBoundary.of(context)` - Returns `ErrorBoundaryProvider` for manual control
+- Extend `ErrorZoneWidget` for stateless error zones
+- Extend `StatefulErrorZoneWidget` for stateful error zones
+- Implement `getDerivedStateFromError` to derive error state
+- Optionally override `componentDidCatch` for error logging/reporting
+- Use `resetErrorBoundary()` and `showErrorBoundary()` methods for manual control
 
 ### ZoneWidget / StatefulZoneWidget
 
 Abstract base classes for widgets with integrated async and error handling.
 
-- Extend `ZoneWidget` for stateless widgets
-- Extend `StatefulZoneWidget` for stateful widgets
+- Extend `ZoneWidget` for `StatelessWidget`
+- Extend `StatefulZoneWidget` for `StatefulWidget`
 
 ## Comparison with Other Solutions
 
@@ -443,10 +431,6 @@ class MyWidget extends ZoneWidget {
 - Automatic caching
 - Cleaner separation of concerns
 - Better composability
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
 ## License
 

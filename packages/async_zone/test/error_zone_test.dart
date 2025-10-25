@@ -5,17 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'helpers/error_test_widgets.dart';
 
 void main() {
-  group('ErrorBoundary', () {
+  group('StatelessErrorZoneWidget', () {
     group('given a child that throws', () {
       group('when synchronous error occurs', () {
         testWidgets('should catch and display fallback', (tester) async {
           // Given
           await tester.pumpWidget(
             MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return Text('Error: $error');
-                },
+              home: TestStatelessErrorZoneWidget(
                 child: const ThrowingWidget(message: 'Test error'),
               ),
             ),
@@ -25,30 +22,7 @@ void main() {
           await tester.pump();
 
           // Then - should display error fallback
-          expect(find.text('Error: Test error'), findsOneWidget);
-        });
-
-        testWidgets('should invoke onError callback', (tester) async {
-          // Given
-          Object? capturedError;
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) => Text('Error: $error'),
-                onError: (error, stackTrace) {
-                  capturedError = error;
-                },
-                child: const ThrowingWidget(message: 'Callback test'),
-              ),
-            ),
-          );
-
-          // When - error occurs
-          await tester.pump();
-
-          // Then - should invoke callback with error
-          expect(capturedError, 'Callback test');
+          expect(find.text('Stateless Error: Test error'), findsOneWidget);
         });
       });
 
@@ -62,10 +36,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return Text('Caught: $error');
-                },
+              home: TestStatelessErrorZoneWidget(
                 child: AsyncZone(
                   fallback: const Text('Loading...'),
                   child: AsyncThrowingWidget(future: future),
@@ -82,7 +53,7 @@ void main() {
           await tester.pump();
 
           // Then - should catch and display error
-          expect(find.text('Caught: Async error'), findsOneWidget);
+          expect(find.text('Stateless Error: Async error'), findsOneWidget);
         });
 
         testWidgets('should handle Exception outside of performRebuild', (
@@ -91,10 +62,7 @@ void main() {
           // Given
           await tester.pumpWidget(
             MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return Text('Caught error: $error');
-                },
+              home: TestStatelessErrorZoneWidget(
                 child: const ButtonThrowingFutureErrorWidget(
                   errorMessage: 'Button error',
                 ),
@@ -115,7 +83,7 @@ void main() {
 
           // Then - should catch the error
           expect(
-            find.text('Caught error: Exception: Button error'),
+            find.text('Stateless Error: Exception: Button error'),
             findsOneWidget,
           );
         });
@@ -132,27 +100,11 @@ void main() {
             MaterialApp(
               home: StatefulBuilder(
                 builder: (context, setState) {
-                  return ErrorBoundary(
-                    builder: (context, error, reset) {
-                      return Column(
-                        children: [
-                          Text('Error: $error'),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                shouldThrow = false;
-                              });
-                              reset();
-                            },
-                            child: const Text('Reset'),
-                          ),
-                        ],
-                      );
-                    },
+                  return TestStatelessErrorZoneWidget(
                     child: ThrowingWidget(
                       key: ValueKey(shouldThrow),
                       shouldThrow: shouldThrow,
-                      message: 'Test message',
+                      message: 'Stateless reset test',
                     ),
                   );
                 },
@@ -162,159 +114,66 @@ void main() {
 
           // Then - initially shows error
           await tester.pump();
-          expect(find.text('Error: Test message'), findsOneWidget);
+          expect(
+            find.text('Stateless Error: Stateless reset test'),
+            findsOneWidget,
+          );
+
+          // When - child state changes and reset is called
+          await tester.pumpWidget(
+            MaterialApp(
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  shouldThrow = false;
+                  return TestStatelessErrorZoneWidget(
+                    child: ThrowingWidget(
+                      key: ValueKey(shouldThrow),
+                      shouldThrow: shouldThrow,
+                      message: 'Stateless reset test',
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
 
           // When - reset is called
           await tester.tap(find.text('Reset'));
           await tester.pump();
 
           // Then - should show normal state
-          expect(find.text('Normal: Test message'), findsOneWidget);
-        });
-
-        testWidgets('should invoke onReset callback with argument', (
-          tester,
-        ) async {
-          // Given
-          Object? resetArg;
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return ElevatedButton(
-                    onPressed: () => reset('custom arg'),
-                    child: Text('Error: $error'),
-                  );
-                },
-                onReset: (arg) {
-                  resetArg = arg;
-                },
-                child: const ThrowingWidget(message: 'Reset test'),
-              ),
-            ),
-          );
-
-          // Then - initially shows error
-          await tester.pump();
-
-          // When - reset is called with argument
-          await tester.tap(find.byType(ElevatedButton));
-          await tester.pump();
-
-          // Then - should invoke callback with argument
-          expect(resetArg, 'custom arg');
+          expect(find.text('Normal: Stateless reset test'), findsOneWidget);
         });
       });
-    });
-  });
 
-  group('ErrorBoundary.of()', () {
-    group('given no ErrorBoundary ancestor', () {
-      group('when of() is called', () {
-        testWidgets('should throw FlutterError', (tester) async {
-          // Given
+      group('when throw button is tapped', () {
+        testWidgets('should show error state', (tester) async {
+          // Given - error state
           await tester.pumpWidget(
             MaterialApp(
-              home: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      ErrorBoundary.of(context);
-                    },
-                    child: const Text('Call of()'),
-                  );
-                },
-              ),
-            ),
-          );
-
-          await tester.pump();
-
-          // When/Then - calling of() should throw
-          expect(
-            () => ErrorBoundary.of(tester.element(find.text('Call of()'))),
-            throwsA(isA<FlutterError>()),
-          );
-        });
-      });
-    });
-
-    group('given an ErrorBoundary ancestor', () {
-      group('when showBoundary is called', () {
-        testWidgets('should programmatically trigger error state', (
-          tester,
-        ) async {
-          // Given
-          await tester.pumpWidget(
-            MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return Text('Error: $error');
-                },
-                child: Builder(
-                  builder: (context) {
-                    return ElevatedButton(
-                      onPressed: () {
-                        ErrorBoundary.of(
-                          context,
-                        ).showBoundary('Manual error', StackTrace.current);
-                      },
-                      child: const Text('Show Error'),
-                    );
-                  },
+              home: TestStatelessErrorZoneWidget(
+                child: const ThrowingWidget(
+                  shouldThrow: true,
+                  message: 'Initial error',
                 ),
               ),
             ),
           );
 
-          // Then - initially shows normal state
           await tester.pump();
-          expect(find.text('Show Error'), findsOneWidget);
-
-          // When - showBoundary is called
-          await tester.tap(find.text('Show Error'));
-          await tester.pump();
-
-          // Then - should display error state
-          expect(find.text('Error: Manual error'), findsOneWidget);
-        });
-      });
-
-      group('when resetBoundary is called', () {
-        testWidgets('should programmatically reset error state', (
-          tester,
-        ) async {
-          // Given
-          await tester.pumpWidget(
-            MaterialApp(
-              home: ErrorBoundary(
-                builder: (context, error, reset) {
-                  return Column(
-                    children: [
-                      Text('Error: $error'),
-                      ElevatedButton(
-                        onPressed: () {
-                          ErrorBoundary.of(context).resetBoundary();
-                        },
-                        child: const Text('Reset via Scope'),
-                      ),
-                    ],
-                  );
-                },
-                child: const ThrowingWidget(message: 'Initial error'),
-              ),
-            ),
+          expect(
+            find.text('Stateless Error: Initial error'),
+            findsOneWidget,
           );
 
-          // When - error occurs
+          // When - throw button is tapped
+          await tester.tap(find.text('Throw'));
           await tester.pump();
 
-          // Then - ErrorBoundary.of() throws because context is inside error fallback
+          // Then - should show new error state
           expect(
-            () =>
-                ErrorBoundary.of(tester.element(find.text('Reset via Scope'))),
-            throwsA(isA<FlutterError>()),
+            find.text('Stateless Error: Stateless reset test'),
+            findsOneWidget,
           );
         });
       });
@@ -398,6 +257,38 @@ void main() {
 
           // Then - should show normal state
           expect(find.text('Normal: Stateful reset test'), findsOneWidget);
+        });
+      });
+
+      group('when throw button is tapped', () {
+        testWidgets('should show error state', (tester) async {
+          // Given - error state
+          await tester.pumpWidget(
+            MaterialApp(
+              home: TestStatefulErrorZoneWidget(
+                child: const ThrowingWidget(
+                  shouldThrow: true,
+                  message: 'Initial error',
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          expect(
+            find.text('Stateful Error: Initial error'),
+            findsOneWidget,
+          );
+
+          // When - throw button is tapped
+          await tester.tap(find.text('Throw'));
+          await tester.pump();
+
+          // Then - should show new error state
+          expect(
+            find.text('Stateful Error: Stateful reset test'),
+            findsOneWidget,
+          );
         });
       });
     });

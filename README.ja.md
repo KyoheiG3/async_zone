@@ -7,7 +7,7 @@ React の Suspense と Error Boundary にインスパイアされた、宣言的
 ## 機能
 
 - 🔄 **AsyncZone**: 自動フォールバック UI を備えた宣言的な非同期処理
-- 🛡️ **ErrorBoundary**: ウィジェットツリー内のエラーをキャッチして処理
+- 🛡️ **ErrorZoneWidget**: React ライクなライフサイクルメソッドを持つカスタムエラーハンドリング
 - 🎯 **ZoneWidget**: 非同期処理とエラーハンドリングのシームレスな統合
 - 🚀 **シンプルな API**: 最小限のボイラープレートで強力な機能
 - ⚡ **パフォーマンス**: 効率的なキャッシングとリビルド最適化
@@ -65,30 +65,48 @@ class MyDataWidget extends ZoneWidget {
 }
 ```
 
-### ErrorBoundary - エラーの優雅な処理（React Error Boundary にインスパイア）
+### ErrorZoneWidget - カスタムエラーハンドリング（React Error Boundary にインスパイア）
 
-ウィジェットツリー内のエラーをキャッチしてフォールバック UI を表示：
+React ライクなライフサイクルメソッドでカスタムエラーハンドリングを作成：
 
 ```dart
 import 'package:async_zone/async_zone.dart';
 
-ErrorBoundary(
-  builder: (context, error, reset) => Column(
-    children: [
-      Text('エラー: $error'),
-      ElevatedButton(
-        onPressed: reset,
-        child: Text('再試行'),
-      ),
-    ],
-  ),
-  onError: (error, stackTrace) {
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  const MyErrorZone({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
     // エラーレポートサービスにログを送信
     print('エラーがキャッチされました: $error');
-  },
-  child: MyWidget(),
-)
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.error != null) {
+      return Column(
+        children: [
+          Text('エラー: ${state.error}'),
+          ElevatedButton(
+            onPressed: resetErrorBoundary,
+            child: Text('再試行'),
+          ),
+        ],
+      );
+    }
+    return child;
+  }
+}
 ```
+
+> **Note:** よりシンプルなエラーバウンダリー実装については、[error_boundary](https://pub.dev/packages/error_boundary) パッケージをご確認ください。
 
 ## コアコンセプト
 
@@ -246,19 +264,6 @@ class _MyWidgetState extends State<MyWidget> {
 - **`use()`**（推奨）: 自動キャッシングでより簡単に使用できます
 - **直接 `throw`**: より多くの制御が可能ですが、慎重な状態管理が必要です
 
-### ErrorBoundary
-
-`ErrorBoundary` は子ウィジェットからのエラーをキャッチし、クラッシュする代わりにフォールバック UI を表示します。React の Error Boundary にインスパイアされています。
-
-**重要:** `ZoneWidget` または `StatefulZoneWidget` の `build()` メソッドから throw されたエラーのみがキャッチされます。
-
-**主な機能:**
-
-- 宣言的なエラーハンドリング
-- エラーから回復するためのリセット機能
-- ログ記録/レポート用のエラーコールバック
-- `showBoundary` によるプログラマティックなエラートリガー
-
 ## 高度な使用方法
 
 ### 並列ビルド vs シーケンシャルビルド
@@ -275,20 +280,6 @@ AsyncZone(
 
 - `true`（デフォルト）: 保留中の処理があっても子ウィジェットのビルドを続行
 - `false`: いずれかの処理が保留中の場合、すべての子ビルドをブロック
-
-### 子孫から Error Boundary にアクセス
-
-ツリーのどこからでもエラーバウンダリーを手動でトリガーできます：
-
-```dart
-final provider = ErrorBoundary.of(context);
-
-// 手動でエラーを表示
-provider.showBoundary(Exception('何か問題が発生しました'));
-
-// エラーバウンダリーをリセット
-provider.resetBoundary();
-```
 
 ### カスタムエラーゾーン
 
@@ -360,7 +351,7 @@ class MyCustomElement extends StatelessElement with ErrorZoneElement<({Object? e
 完全なサンプルについては [example](example/) ディレクトリを参照してください：
 
 - 基本的な非同期処理
-- エラーバウンダリーの使用
+- ErrorZoneWidget を使ったカスタムエラーゾーン
 - ネストされた async zones
 - エラー回復パターン
 - 状態管理との統合
@@ -379,18 +370,15 @@ class MyCustomElement extends StatelessElement with ErrorZoneElement<({Object? e
 
 - `AsyncZone.of(context)` - future を消費するための `AsyncZoneScope` を返す
 
-### ErrorBoundary
+### ErrorZoneWidget / StatefulErrorZoneWidget
 
-| プロパティ | 型                     | 説明                                         |
-| ---------- | ---------------------- | -------------------------------------------- |
-| `builder`  | `ErrorFallbackBuilder` | エラー発生時のフォールバック UI のビルダー   |
-| `child`    | `Widget`               | ラップする子ウィジェット                     |
-| `onError`  | `Function?`            | エラーがキャッチされた時のコールバック       |
-| `onReset`  | `Function?`            | バウンダリーがリセットされた時のコールバック |
+カスタムエラーハンドリング機能を持つ抽象基底クラス。
 
-**メソッド:**
-
-- `ErrorBoundary.of(context)` - 手動制御のための `ErrorBoundaryProvider` を返す
+- Stateless なエラーゾーンには `ErrorZoneWidget` を継承
+- Stateful なエラーゾーンには `StatefulErrorZoneWidget` を継承
+- `getDerivedStateFromError` を実装してエラー状態を導出
+- オプションで `componentDidCatch` をオーバーライドしてエラーのログ記録/レポート
+- `resetErrorBoundary()` と `showErrorBoundary()` メソッドで手動制御
 
 ### ZoneWidget / StatefulZoneWidget
 
@@ -443,10 +431,6 @@ class MyWidget extends ZoneWidget {
 - 自動キャッシング
 - 関心の分離がより明確
 - より良い構成可能性
-
-## コントリビューション
-
-コントリビューションを歓迎します！PR を送信する前にコントリビューションガイドラインをお読みください。
 
 ## ライセンス
 
