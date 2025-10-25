@@ -4,7 +4,7 @@ import 'zone_element.dart';
 
 /// An abstract base class for stateless widgets with error zone capabilities.
 ///
-/// [ErrorZone] extends [StatelessWidget] and mixes in [ErrorZoneWidget] to provide
+/// [ErrorZone] extends [StatelessWidget] and mixes in [ErrorBoundaryMixin] to provide
 /// error boundary functionality. It creates a [StatelessErrorZoneElement] which
 /// manages error state and provides error handling.
 ///
@@ -15,8 +15,8 @@ import 'zone_element.dart';
 ///
 /// See also:
 /// - [ErrorBoundary], a concrete implementation of error boundaries.
-/// - [ErrorZoneWidget], the mixin that provides error zone functionality.
-abstract class ErrorZone<T> extends StatelessWidget with ErrorZoneWidget<T> {
+/// - [ErrorBoundaryMixin], the mixin that provides error zone functionality.
+abstract class ErrorZone<T> extends StatelessWidget with ErrorBoundaryMixin<T> {
   /// Creates an [ErrorZone].
   ErrorZone({super.key});
 
@@ -39,7 +39,7 @@ class StatelessErrorZoneElement<T> extends StatelessElement
 
 /// An abstract base class for stateful widgets with error zone capabilities.
 ///
-/// [StatefulErrorZone] extends [StatefulWidget] and mixes in [ErrorZoneWidget] to
+/// [StatefulErrorZone] extends [StatefulWidget] and mixes in [ErrorBoundaryMixin] to
 /// provide error boundary functionality. It creates a [StatefulErrorZoneElement]
 /// which manages error state and provides error handling.
 ///
@@ -48,9 +48,9 @@ class StatelessErrorZoneElement<T> extends StatelessElement
 ///
 /// See also:
 /// - [ErrorZone], the stateless version of error zones.
-/// - [ErrorZoneWidget], the mixin that provides error zone functionality.
+/// - [ErrorBoundaryMixin], the mixin that provides error zone functionality.
 abstract class StatefulErrorZone<T> extends StatefulWidget
-    with ErrorZoneWidget<T> {
+    with ErrorBoundaryMixin<T> {
   /// Creates a [StatefulErrorZone].
   StatefulErrorZone({super.key});
 

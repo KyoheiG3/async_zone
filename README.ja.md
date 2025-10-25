@@ -323,12 +323,12 @@ class MyCustomErrorZone extends ErrorZone<({Object? error})> {
 }
 ```
 
-#### Method 2: ErrorZoneWidget と ErrorZoneElement を直接使用
+#### Method 2: ErrorBoundaryMixin と ErrorZoneElement を直接使用
 
-より多くの制御が必要な場合は、`ErrorZoneWidget` を mixin して `ErrorZoneElement` を持つカスタム element を作成：
+より多くの制御が必要な場合は、`ErrorBoundaryMixin` を mixin して `ErrorZoneElement` を持つカスタム element を作成：
 
 ```dart
-class MyCustomWidget extends StatelessWidget with ErrorZoneWidget<({Object? error})> {
+class MyCustomWidget extends StatelessWidget with ErrorBoundaryMixin<({Object? error})> {
   const MyCustomWidget({super.key, required this.child});
 
   final Widget child;

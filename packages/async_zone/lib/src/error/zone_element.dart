@@ -19,7 +19,7 @@ import 'zone_provider.dart';
 /// - [resetErrorBoundary]: Method to reset the error state
 /// - [showErrorBoundary]: Method to manually show an error
 /// - [state]: Getter to access the current error state
-mixin ErrorZoneWidget<T> on Widget {
+mixin ErrorBoundaryMixin<T> on Widget {
   final _controller = ErrorZoneController<T>();
 
   /// Called when an error is caught by this error zone.
@@ -67,11 +67,11 @@ mixin ErrorZoneWidget<T> on Widget {
 /// - Rebuild coordination when errors occur or are cleared
 /// - Integration with [ErrorZoneProvider] for descendant error handling
 ///
-/// This mixin works in conjunction with [ErrorZoneWidget] to provide complete
+/// This mixin works in conjunction with [ErrorBoundaryMixin] to provide complete
 /// error boundary functionality.
 mixin ErrorZoneElement<T> on ComponentElement {
   @override
-  ErrorZoneWidget<T> get widget;
+  ErrorBoundaryMixin<T> get widget;
 
   late T _state = widget.getDerivedStateFromError(null);
 

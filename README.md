@@ -323,12 +323,12 @@ class MyCustomErrorZone extends ErrorZone<({Object? error})> {
 }
 ```
 
-#### Method 2: Using ErrorZoneWidget and ErrorZoneElement Directly
+#### Method 2: Using ErrorBoundaryMixin and ErrorZoneElement Directly
 
-If you need more control, mixin `ErrorZoneWidget` and create a custom element with `ErrorZoneElement`:
+If you need more control, mixin `ErrorBoundaryMixin` and create a custom element with `ErrorZoneElement`:
 
 ```dart
-class MyCustomWidget extends StatelessWidget with ErrorZoneWidget<({Object? error})> {
+class MyCustomWidget extends StatelessWidget with ErrorBoundaryMixin<({Object? error})> {
   const MyCustomWidget({super.key, required this.child});
 
   final Widget child;

@@ -1,6 +1,6 @@
 /// A controller that manages error zone state and provides methods to control error boundaries.
 ///
-/// This controller is used by [ErrorZoneWidget] to expose error boundary
+/// This controller is used by [ErrorBoundaryMixin] to expose error boundary
 /// functionality ([resetErrorBoundary] and [showErrorBoundary]) while keeping
 /// the actual implementation in [ErrorZoneElement].
 ///

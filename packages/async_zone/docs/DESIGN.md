@@ -38,7 +38,6 @@ lib/src/
 │   └── zone_scope.dart      # Interface definitions
 ├── error/                   # Error Boundary implementation
 │   ├── zone.dart            # Base classes for ErrorZone
-│   ├── zone_widget.dart     # ErrorZoneWidget mixin
 │   ├── zone_element.dart    # ErrorZoneElement mixin
 │   ├── zone_controller.dart # State management controller
 │   └── zone_provider.dart   # Error propagation provider
