@@ -22,7 +22,7 @@ abstract class ErrorZoneProviderScope {
 /// capabilities to the widget tree. It implements [ErrorZoneProviderScope]
 /// through its element.
 ///
-/// This class is typically not used directly. Use [ErrorZone] or [ErrorBoundary] instead.
+/// This class is typically not used directly. Use [ErrorZoneWidget] or [ErrorBoundary] instead.
 class ErrorZoneProvider extends InheritedWidget {
   /// Creates an [ErrorZoneProvider].
   ///

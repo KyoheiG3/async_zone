@@ -15,7 +15,7 @@ AsyncZone is a Flutter library that provides React Suspense-like async handling 
 │                     Application                         │
 ├─────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────┐    │
-│  │      ErrorZone (ErrorBoundary)                  │    │
+│  │      ErrorZoneWidget (ErrorBoundary)            │    │
 │  │  ┌───────────────────────────────────────────┐  │    │
 │  │  │       AsyncZone (Suspense)                │  │    │
 │  │  │  ┌─────────────────────────────────────┐  │  │    │
@@ -37,7 +37,7 @@ lib/src/
 │   ├── zone_provider.dart   # InheritedWidget & Element
 │   └── zone_scope.dart      # Interface definitions
 ├── error/                   # Error Boundary implementation
-│   ├── zone.dart            # Base classes for ErrorZone
+│   ├── zone.dart            # Base classes for ErrorZoneWidget
 │   ├── zone_element.dart    # ErrorZoneElement mixin
 │   ├── zone_controller.dart # State management controller
 │   └── zone_provider.dart   # Error propagation provider
@@ -137,7 +137,7 @@ class MyWidget extends ZoneWidget {
 }
 
 // With custom error handling
-class MyErrorWidget extends ErrorZone<MyState> {
+class MyErrorWidget extends ErrorZoneWidget<MyState> {
   @override
   MyState getDerivedStateFromError(Object? error) => MyState(error: error);
 
@@ -150,12 +150,12 @@ class MyErrorWidget extends ErrorZone<MyState> {
 
 ## Error Handling Strategy
 
-| Scenario             | Has ErrorZone? | Behavior                                   |
-| -------------------- | -------------- | ------------------------------------------ |
-| Sync error           | Yes            | Caught by ErrorZone                        |
-| Sync error           | No             | Rethrow (Flutter handles)                  |
-| Async error (Future) | Yes            | Caught by ErrorZone after Future completes |
-| Async error (Future) | No             | Stored, thrown on next build               |
+| Scenario             | Has ErrorZoneWidget? | Behavior                                         |
+| -------------------- | -------------------- | ------------------------------------------------ |
+| Sync error           | Yes                  | Caught by ErrorZoneWidget                        |
+| Sync error           | No                   | Rethrow (Flutter handles)                        |
+| Async error (Future) | Yes                  | Caught by ErrorZoneWidget after Future completes |
+| Async error (Future) | No                   | Stored, thrown on next build                     |
 
 ## Performance Considerations
 

@@ -55,7 +55,7 @@ typedef ErrorFallbackBuilder =
 /// See also:
 /// - [ErrorFallbackBuilder], which defines the signature for the fallback builder.
 /// - [ErrorBoundaryProvider], which provides access to reset and show boundary functions.
-class ErrorBoundary extends ErrorZone<ErrorBoundaryState> {
+class ErrorBoundary extends ErrorZoneWidget<ErrorBoundaryState> {
   /// Creates an [ErrorBoundary] widget.
   ///
   /// The [builder] and [child] parameters are required.

@@ -292,12 +292,12 @@ provider.resetBoundary();
 
 ### カスタムエラーゾーン
 
-#### Method 1: ErrorZone を継承
+#### Method 1: ErrorZoneWidget を継承
 
-`ErrorZone` を継承してカスタムエラーハンドリングを作成：
+`ErrorZoneWidget` を継承してカスタムエラーハンドリングを作成：
 
 ```dart
-class MyCustomErrorZone extends ErrorZone<({Object? error})> {
+class MyCustomErrorZone extends ErrorZoneWidget<({Object? error})> {
   const MyCustomErrorZone({super.key, required this.child});
 
   final Widget child;

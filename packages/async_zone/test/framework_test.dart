@@ -66,7 +66,7 @@ void main() {
       });
     });
 
-    group('given a ZoneWidget without ErrorZone', () {
+    group('given a ZoneWidget without ErrorZoneWidget', () {
       group('when Future throws error', () {
         testWidgets('should rethrow on next build', (tester) async {
           // Given

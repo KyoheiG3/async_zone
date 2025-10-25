@@ -5,7 +5,7 @@ import 'zone_provider.dart';
 
 /// A mixin that provides error zone functionality to widgets.
 ///
-/// This mixin is used with [ErrorZone] and [StatefulErrorZone] to add error boundary
+/// This mixin is used with [ErrorZoneWidget] and [StatefulErrorZoneWidget] to add error boundary
 /// capabilities to widgets. It provides methods for handling errors and managing
 /// error state through an [ErrorZoneController].
 ///

@@ -66,10 +66,10 @@ class MultipleThrowingWidget extends StatelessWidget {
   }
 }
 
-/// Custom ErrorZone implementation with state tracking
+/// Custom ErrorZoneWidget implementation with state tracking
 typedef CustomErrorState = ({int errorCount, Object? lastError});
 
-class CustomErrorZoneWidget extends ErrorZone<CustomErrorState> {
+class CustomErrorZoneWidget extends ErrorZoneWidget<CustomErrorState> {
   CustomErrorZoneWidget({super.key});
 
   @override
@@ -96,10 +96,10 @@ class CustomErrorZoneWidget extends ErrorZone<CustomErrorState> {
   }
 }
 
-/// ErrorZone that tracks componentDidCatch calls
+/// ErrorZoneWidget that tracks componentDidCatch calls
 typedef ComponentDidCatchState = ({Object? error});
 
-class ComponentDidCatchWidget extends ErrorZone<ComponentDidCatchState> {
+class ComponentDidCatchWidget extends ErrorZoneWidget<ComponentDidCatchState> {
   ComponentDidCatchWidget({super.key});
 
   @override
@@ -126,11 +126,12 @@ class ComponentDidCatchWidget extends ErrorZone<ComponentDidCatchState> {
   }
 }
 
-/// StatefulErrorZone for testing stateful error handling
+/// StatefulErrorZoneWidget for testing stateful error handling
 typedef StatefulErrorState = ({int errorCount, Object? lastError});
 
-class StatefulErrorZoneWidget extends StatefulErrorZone<StatefulErrorState> {
-  StatefulErrorZoneWidget({super.key, required this.child});
+class TestStatefulErrorZoneWidget
+    extends StatefulErrorZoneWidget<StatefulErrorState> {
+  TestStatefulErrorZoneWidget({super.key, required this.child});
 
   final Widget child;
 
@@ -140,11 +141,11 @@ class StatefulErrorZoneWidget extends StatefulErrorZone<StatefulErrorState> {
   }
 
   @override
-  State<StatefulErrorZoneWidget> createState() =>
+  State<TestStatefulErrorZoneWidget> createState() =>
       _StatefulErrorZoneWidgetState();
 }
 
-class _StatefulErrorZoneWidgetState extends State<StatefulErrorZoneWidget> {
+class _StatefulErrorZoneWidgetState extends State<TestStatefulErrorZoneWidget> {
   @override
   Widget build(BuildContext context) {
     if (widget.state.lastError != null) {

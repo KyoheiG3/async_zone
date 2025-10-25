@@ -321,14 +321,14 @@ void main() {
     });
   });
 
-  group('StatefulErrorZone', () {
+  group('StatefulErrorZoneWidget', () {
     group('given a stateful child that throws', () {
       group('when error occurs', () {
         testWidgets('should catch errors', (tester) async {
           // Given
           await tester.pumpWidget(
             MaterialApp(
-              home: StatefulErrorZoneWidget(
+              home: TestStatefulErrorZoneWidget(
                 child: const ThrowingWidget(message: 'Stateful test error'),
               ),
             ),
@@ -356,7 +356,7 @@ void main() {
             MaterialApp(
               home: StatefulBuilder(
                 builder: (context, setState) {
-                  return StatefulErrorZoneWidget(
+                  return TestStatefulErrorZoneWidget(
                     child: ThrowingWidget(
                       key: ValueKey(shouldThrow),
                       shouldThrow: shouldThrow,
@@ -381,7 +381,7 @@ void main() {
               home: StatefulBuilder(
                 builder: (context, setState) {
                   shouldThrow = false;
-                  return StatefulErrorZoneWidget(
+                  return TestStatefulErrorZoneWidget(
                     child: ThrowingWidget(
                       key: ValueKey(shouldThrow),
                       shouldThrow: shouldThrow,

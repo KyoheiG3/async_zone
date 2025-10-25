@@ -292,12 +292,12 @@ provider.resetBoundary();
 
 ### Custom Error Zones
 
-#### Method 1: Extending ErrorZone
+#### Method 1: Extending ErrorZoneWidget
 
-Create custom error handling by extending `ErrorZone`:
+Create custom error handling by extending `ErrorZoneWidget`:
 
 ```dart
-class MyCustomErrorZone extends ErrorZone<({Object? error})> {
+class MyCustomErrorZone extends ErrorZoneWidget<({Object? error})> {
   const MyCustomErrorZone({super.key, required this.child});
 
   final Widget child;

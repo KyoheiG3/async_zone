@@ -15,7 +15,7 @@ AsyncZone は、React の Suspense ライクな非同期処理と Error Boundary
 │                     Application                         │
 ├─────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────┐    │
-│  │      ErrorZone (ErrorBoundary)                  │    │
+│  │      ErrorZoneWidget (ErrorBoundary)            │    │
 │  │  ┌───────────────────────────────────────────┐  │    │
 │  │  │       AsyncZone (Suspense)                │  │    │
 │  │  │  ┌─────────────────────────────────────┐  │  │    │
@@ -37,7 +37,7 @@ lib/src/
 │   ├── zone_provider.dart   # InheritedWidget & Element
 │   └── zone_scope.dart      # インターフェース定義
 ├── error/                   # Error Boundary 実装
-│   ├── zone.dart            # ErrorZone基底クラス
+│   ├── zone.dart            # ErrorZoneWidget基底クラス
 │   ├── zone_element.dart    # ErrorZoneElement mixin
 │   ├── zone_controller.dart # 状態管理コントローラー
 │   └── zone_provider.dart   # エラー伝播プロバイダー
@@ -137,7 +137,7 @@ class MyWidget extends ZoneWidget {
 }
 
 // カスタムエラーハンドリング付き
-class MyErrorWidget extends ErrorZone<MyState> {
+class MyErrorWidget extends ErrorZoneWidget<MyState> {
   @override
   MyState getDerivedStateFromError(Object? error) => MyState(error: error);
 
@@ -150,12 +150,12 @@ class MyErrorWidget extends ErrorZone<MyState> {
 
 ## エラーハンドリング戦略
 
-| シナリオ               | ErrorZone 有無 | 動作                             |
-| ---------------------- | -------------- | -------------------------------- |
-| 同期エラー             | あり           | ErrorZone が捕捉                 |
-| 同期エラー             | なし           | 再スロー（Flutter が処理）       |
-| 非同期エラー（Future） | あり           | Future 完了後に ErrorZone が捕捉 |
-| 非同期エラー（Future） | なし           | 保存され、次のビルドで再スロー   |
+| シナリオ               | ErrorZoneWidget 有無 | 動作                                   |
+| ---------------------- | -------------------- | -------------------------------------- |
+| 同期エラー             | あり                 | ErrorZoneWidget が捕捉                 |
+| 同期エラー             | なし                 | 再スロー（Flutter が処理）             |
+| 非同期エラー（Future） | あり                 | Future 完了後に ErrorZoneWidget が捕捉 |
+| 非同期エラー（Future） | なし                 | 保存され、次のビルドで再スロー         |
 
 ## パフォーマンス考慮事項
 
