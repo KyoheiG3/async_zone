@@ -43,8 +43,8 @@ lib/src/
 │   └── zone_provider.dart   # Error propagation provider
 ├── foundation/
 │   └── empty.dart           # Empty widget for placeholder
-├── framework.dart           # ZoneWidget/ZoneElement base
-└── error_boundary.dart      # User-facing ErrorBoundary widget
+├── zone_element.dart        # ZoneElement base
+└── zone.dart                # ZoneWidget base
 ```
 
 ## Design Patterns
@@ -81,19 +81,32 @@ final _errors = Expando<Object>('AsyncZone errors');
 
 **Tradeoff**: Cannot manually clear cache (by design).
 
-### 3. Error Boundary
+### 3. Custom Error Zones
 
-Catches errors from child widgets and displays fallback UI:
+Create custom error handling with React-like lifecycle methods:
 
 ```dart
-ErrorBoundary(
-  builder: (context, error, reset) => ErrorView(error),
-  onError: (error, stackTrace) => log(error),
-  child: MyWidget(),
-)
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
+    log(error);
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return state.error != null ? ErrorView(state.error) : child;
+  }
+}
 ```
 
 **Controller Pattern**: Widget holds controller (ephemeral), Element attaches to it (persistent).
+
+> **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://pub.dev/packages/error_boundary) package.
 
 ## API Design
 
@@ -111,19 +124,35 @@ final scope = AsyncZone.of(context);
 final data = scope.use(fetchData());
 ```
 
-### ErrorBoundary
+### ErrorZoneWidget
 
 ```dart
-ErrorBoundary(
-  builder: (context, error, resetErrorBoundary) {
-    return ErrorView(
-      error: error,
-      onRetry: () => resetErrorBoundary(),
-    );
-  },
-  onError: (error, stackTrace) => log(error),
-  child: MyWidget(),
-)
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  const MyErrorZone({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
+    log(error);
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.error != null) {
+      return ErrorView(
+        error: state.error,
+        onRetry: resetErrorBoundary,
+      );
+    }
+    return child;
+  }
+}
 ```
 
 ### ZoneWidget

@@ -7,3 +7,4 @@ environment:
 
 workspace:
   - packages/async_zone
+  - packages/error_boundary

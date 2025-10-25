@@ -43,8 +43,8 @@ lib/src/
 │   └── zone_provider.dart   # エラー伝播プロバイダー
 ├── foundation/
 │   └── empty.dart           # プレースホルダー用空ウィジェット
-├── framework.dart           # ZoneWidget/ZoneElement基底
-└── error_boundary.dart      # ユーザー向けErrorBoundaryウィジェット
+├── zone_element.dart        # ZoneElement基底
+└── zone.dart                # ZoneWidget基底
 ```
 
 ## 設計パターン
@@ -81,19 +81,32 @@ final _errors = Expando<Object>('AsyncZone errors');
 
 **トレードオフ**: 手動でのキャッシュクリアは不可（設計意図）。
 
-### 3. Error Boundary
+### 3. カスタムエラーゾーン
 
-子ウィジェットからのエラーを捕捉してフォールバック UI を表示：
+React ライクなライフサイクルメソッドでカスタムエラーハンドリングを作成：
 
 ```dart
-ErrorBoundary(
-  builder: (context, error, reset) => ErrorView(error),
-  onError: (error, stackTrace) => log(error),
-  child: MyWidget(),
-)
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
+    log(error);
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return state.error != null ? ErrorView(state.error) : child;
+  }
+}
 ```
 
 **コントローラーパターン**: Widget がコントローラー保持（一時的）、Element がアタッチ（永続的）。
+
+> **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [error_boundary](https://pub.dev/packages/error_boundary) をご確認ください。
 
 ## API 設計
 
@@ -111,19 +124,35 @@ final scope = AsyncZone.of(context);
 final data = scope.use(fetchData());
 ```
 
-### ErrorBoundary
+### ErrorZoneWidget
 
 ```dart
-ErrorBoundary(
-  builder: (context, error, resetErrorBoundary) {
-    return ErrorView(
-      error: error,
-      onRetry: () => resetErrorBoundary(),
-    );
-  },
-  onError: (error, stackTrace) => log(error),
-  child: MyWidget(),
-)
+class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
+  const MyErrorZone({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  void componentDidCatch(Object error, StackTrace stackTrace) {
+    log(error);
+  }
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.error != null) {
+      return ErrorView(
+        error: state.error,
+        onRetry: resetErrorBoundary,
+      );
+    }
+    return child;
+  }
+}
 ```
 
 ### ZoneWidget
