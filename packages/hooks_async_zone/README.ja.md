@@ -1,0 +1,156 @@
+# hooks_async_zone
+
+[English](README.md) | **日本語**
+
+[async_zone](https://pub.dev/packages/async_zone) に [flutter_hooks](https://pub.dev/packages/flutter_hooks) の統合を提供する Flutter パッケージです。
+
+## 機能
+
+- 🎣 **HookZoneWidget**: Flutter hooks を AsyncZone と共に使用
+- 🛡️ **HookErrorZoneWidget**: hooks とエラーバウンダリの組み合わせ
+- 🔄 **useZone**: 非同期操作を消費するための hook
+- 🚀 **HookZoneBuilder**: インライン使用のための便利なウィジェット
+
+## インストール
+
+```bash
+flutter pub add hooks_async_zone
+```
+
+## クイックスタート
+
+```dart
+import 'package:hooks_async_zone/hooks_async_zone.dart';
+import 'package:async_zone/async_zone.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+class MyWidget extends HookZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final counter = useState(0);
+    final data = useZone(fetchData());
+
+    return Column(
+      children: [
+        Text('Counter: ${counter.value}'),
+        Text('Data: $data'),
+        ElevatedButton(
+          onPressed: () => counter.value++,
+          child: Text('Increment'),
+        ),
+      ],
+    );
+  }
+
+  Future<String> fetchData() async {
+    await Future.delayed(Duration(seconds: 2));
+    return 'Hello!';
+  }
+}
+
+// AsyncZone でラップ
+AsyncZone(
+  fallback: CircularProgressIndicator(),
+  child: MyWidget(),
+)
+```
+
+## なぜ hooks_async_zone が必要？
+
+[async_zone](https://pub.dev/packages/async_zone) を [flutter_hooks](https://pub.dev/packages/flutter_hooks) と一緒に使うには、`HookElement` と `ZoneElement` の両方を mixin したカスタム要素が必要です：
+
+```dart
+// hooks_async_zone を使わない場合:
+abstract class ZoneHookWidget extends HookWidget {
+  const ZoneHookWidget({super.key});
+  @override
+  ZoneHookElement createElement() => ZoneHookElement(this);
+}
+
+class ZoneHookElement extends StatelessElement with HookElement, ZoneElement {
+  ZoneHookElement(super.widget);
+}
+```
+
+`hooks_async_zone` を使えば、単に `HookZoneWidget` を使うだけです。
+
+## API リファレンス
+
+### HookZoneWidget / StatefulHookZoneWidget
+
+hooks とゾーン機能を持つウィジェットの基底クラス。
+
+```dart
+class MyWidget extends HookZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = useState(0);
+    final data = useZone(fetchData());
+    return Text('$data');
+  }
+}
+```
+
+### HookErrorZoneWidget / StatefulHookErrorZoneWidget
+
+hooks、ゾーン、エラーバウンダリを持つ基底クラス。`getDerivedStateFromError` を実装し、`build` でエラー状態を処理する必要があります：
+
+```dart
+class MyWidget extends HookErrorZoneWidget<({Object? error})> {
+  MyWidget({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) => (error: error);
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.error != null) {
+      return Text('Error: ${state.error}');
+    }
+    return child;
+  }
+}
+```
+
+### HookZoneBuilder
+
+インライン使用のための便利なウィジェット：
+
+```dart
+HookZoneBuilder(
+  builder: (context) {
+    final counter = useState(0);
+    return Text('Counter: ${counter.value}');
+  },
+)
+```
+
+### useZone
+
+非同期操作を消費するための hook：
+
+```dart
+final data = useZone(fetchData());
+```
+
+次と同等です：
+
+```dart
+final data = AsyncZone.of(context).use(fetchData());
+```
+
+## 関連パッケージ
+
+- [async_zone](https://pub.dev/packages/async_zone) - 宣言的な非同期操作とエラーバウンダリ
+- [error_boundary](https://pub.dev/packages/error_boundary) - 宣言的なエラーハンドリング
+- [flutter_hooks](https://pub.dev/packages/flutter_hooks) - Flutter 用の React hooks
+
+## ライセンス
+
+BSD 3-Clause License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
