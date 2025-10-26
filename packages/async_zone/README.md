@@ -387,6 +387,26 @@ Abstract base classes for widgets with integrated async and error handling.
 - Extend `ZoneWidget` for `StatelessWidget`
 - Extend `StatefulZoneWidget` for `StatefulWidget`
 
+### ZoneBuilder
+
+A convenience widget that provides zone functionality through a builder pattern.
+
+This widget is useful when you want to use zones without creating a custom widget class. It's similar to `Builder` but with zone support.
+
+**Example:**
+
+```dart
+AsyncZone(
+  fallback: CircularProgressIndicator(),
+  child: ZoneBuilder(
+    builder: (context) {
+      final data = AsyncZone.of(context).use(fetchData());
+      return Text('Data: $data');
+    },
+  ),
+)
+```
+
 ## Comparison with Other Solutions
 
 ### vs FutureBuilder

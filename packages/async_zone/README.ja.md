@@ -387,6 +387,26 @@ class MyCustomElement extends StatelessElement with ErrorZoneElement<({Object? e
 - `StatelessWidget` には `ZoneWidget` を継承
 - `StatefulWidget` には `StatefulZoneWidget` を継承
 
+### ZoneBuilder
+
+ビルダーパターンでゾーン機能を提供する便利なウィジェット。
+
+カスタムウィジェットクラスを作成せずにゾーンを使用したい場合に便利です。`Builder` に似ていますが、ゾーンサポートが追加されています。
+
+**例:**
+
+```dart
+AsyncZone(
+  fallback: CircularProgressIndicator(),
+  child: ZoneBuilder(
+    builder: (context) {
+      final data = AsyncZone.of(context).use(fetchData());
+      return Text('Data: $data');
+    },
+  ),
+)
+```
+
 ## 他のソリューションとの比較
 
 ### vs FutureBuilder
