@@ -84,3 +84,41 @@ class DirectThrowingZoneWidget extends ZoneWidget {
     throw future;
   }
 }
+
+/// Tracks build counts for testing canBuildChild behavior
+class BuildCountingWidget extends ZoneWidget {
+  const BuildCountingWidget({
+    super.key,
+    required this.onBuild,
+  });
+
+  final VoidCallback onBuild;
+
+  @override
+  Widget build(BuildContext context) {
+    onBuild();
+    return const Text('Child built');
+  }
+}
+
+/// Widget with two children - first throws future, second is sibling
+class SiblingFutureWidget extends StatelessWidget {
+  const SiblingFutureWidget({
+    super.key,
+    required this.firstChild,
+    required this.secondChild,
+  });
+
+  final Widget firstChild;
+  final Widget secondChild;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        firstChild,
+        secondChild,
+      ],
+    );
+  }
+}
