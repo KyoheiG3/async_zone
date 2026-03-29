@@ -102,7 +102,7 @@ class AsyncZoneProviderElement extends InheritedElement
     _tasks.add(future);
     future
         .onError((error, _) {
-          _errors[future] = error!;
+          _errors[future] = error;
         })
         .whenComplete(() {
           _tasks.remove(future);
