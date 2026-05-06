@@ -120,6 +120,35 @@ class _StatefulErrorZoneWidgetState extends State<TestStatefulErrorZoneWidget> {
   }
 }
 
+/// ErrorZoneWidget whose fallback is provided by a builder. Used to construct
+/// custom fallbacks (including ones that throw or that contain a throwing
+/// descendant) for nested escalation tests.
+class CustomFallbackErrorZoneWidget
+    extends ErrorZoneWidget<({Object? error})> {
+  CustomFallbackErrorZoneWidget({
+    super.key,
+    required this.fallback,
+    required this.child,
+  });
+
+  final Widget Function(Object error) fallback;
+  final Widget child;
+
+  @override
+  ({Object? error}) getDerivedStateFromError(Object? error) {
+    return (error: error);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final error = state.error;
+    if (error != null) {
+      return fallback(error);
+    }
+    return child;
+  }
+}
+
 /// StatefulZoneWidget that throws Exception when button is pressed
 /// This tests the case where error occurs outside of initial performRebuild
 class ButtonThrowingFutureErrorWidget extends StatefulZoneWidget {

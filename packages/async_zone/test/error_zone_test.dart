@@ -293,4 +293,72 @@ void main() {
       });
     });
   });
+
+  group('nested ErrorZoneWidget', () {
+    testWidgets('fallback that throws synchronously escalates to outer', (
+      tester,
+    ) async {
+      // Given - inner fallback rethrows the captured error
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TestStatelessErrorZoneWidget(
+            child: CustomFallbackErrorZoneWidget(
+              fallback: (error) => throw error,
+              child: const ThrowingWidget(message: 'kaboom'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Then - outer catches the rethrown error, no unhandled exception
+      expect(find.text('Stateless Error: kaboom'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'fallback containing a throwing descendant ZoneWidget escalates to outer',
+      (tester) async {
+        // Given - inner fallback returns a ZoneWidget that throws on build
+        await tester.pumpWidget(
+          MaterialApp(
+            home: TestStatelessErrorZoneWidget(
+              child: CustomFallbackErrorZoneWidget(
+                fallback: (_) =>
+                    const ThrowingWidget(message: 'fallback-error'),
+                child: const ThrowingWidget(message: 'initial-error'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Then - the descendant throw escalates past inner to outer
+        expect(find.text('Stateless Error: fallback-error'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'fallback rethrow without an outer surfaces as unhandled error',
+      (tester) async {
+        // Given - single ErrorZoneWidget whose fallback rethrows
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CustomFallbackErrorZoneWidget(
+              fallback: (error) => throw error,
+              child: const ThrowingWidget(message: 'kaboom'),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Then - no outer to escalate to, so the rethrow surfaces
+        expect(tester.takeException(), 'kaboom');
+      },
+    );
+  });
 }

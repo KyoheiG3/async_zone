@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../foundation/empty.dart';
 import 'zone_controller.dart';
 import 'zone_provider.dart';
 
@@ -118,6 +119,23 @@ mixin ErrorZoneElement<T> on ComponentElement {
       },
       stateGetter: () => _state,
     );
+
+    if (hasError) {
+      // While rendering the fallback, do not expose this boundary's
+      // ErrorZoneProvider. Errors thrown synchronously by the fallback are
+      // routed to the next outer ErrorZoneProvider here; errors thrown by
+      // descendant ZoneWidgets escalate naturally because their ZoneElement
+      // looks up past us. Mirrors React's semantics where fallback errors
+      // propagate to a higher boundary.
+      final outer = ErrorZoneProvider.maybeOf(this);
+      try {
+        return super.build();
+      } catch (error, stackTrace) {
+        if (outer == null) rethrow;
+        outer.markShowError(error, stackTrace);
+        return const Empty();
+      }
+    }
 
     return ErrorZoneProvider(
       canShowError: () => _isDuringPerformRebuild,
