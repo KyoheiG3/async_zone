@@ -346,6 +346,25 @@ class MyCustomElement extends StatelessElement with ErrorZoneElement<({Object? e
 
 これにより element のライフサイクルを完全に制御できます。
 
+### 入れ子のエラーゾーン
+
+`ErrorZoneWidget`（または `ErrorZoneElement` を使った任意のウィジェット）を入れ子にした場合、内側のフォールバック内で throw されたエラーは外側のエラーゾーンにエスカレートします（React の error boundary の意味論と同じ）。対象は：
+
+- 内側のゾーンがフォールバックをレンダリング中に同期的に throw されたエラー
+- そのフォールバック配下の `ZoneWidget` から throw されたエラー
+
+```dart
+MyOuterErrorZone( // inner で扱えないエラーを処理
+  child: MyInnerErrorZone(
+    // build / fallback が回復不能なエラーを throw した場合、
+    // 外側のゾーンが拾う
+    child: SomeWidget(),
+  ),
+)
+```
+
+これは `ErrorZoneElement` mixin レベルで動作するので、`ErrorZoneElement` を使うウィジェットは自動的にこの挙動の対象になります。外側のエラーゾーンが存在しない場合、再 throw は未処理のビルドエラーとして表面化します。
+
 ## サンプル
 
 完全なサンプルについては [example](example/) ディレクトリを参照してください：

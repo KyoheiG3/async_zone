@@ -346,6 +346,25 @@ class MyCustomElement extends StatelessElement with ErrorZoneElement<({Object? e
 
 This gives you full control over the element lifecycle.
 
+### Nested Error Zones
+
+When `ErrorZoneWidget` (or any widget using `ErrorZoneElement`) is nested, errors thrown by an inner fallback escalate to the next outer error zone, mirroring React's error boundary semantics. This applies to:
+
+- Errors thrown synchronously while the inner zone is rendering its fallback
+- Errors thrown by `ZoneWidget` descendants of that fallback
+
+```dart
+MyOuterErrorZone( // handles what inner cannot
+  child: MyInnerErrorZone(
+    // when its build/fallback throws an unrecoverable error,
+    // the outer zone catches it
+    child: SomeWidget(),
+  ),
+)
+```
+
+This works at the `ErrorZoneElement` mixin level, so any widget that uses `ErrorZoneElement` participates automatically. If no outer error zone exists, the rethrow surfaces as an unhandled build error.
+
 ## Examples
 
 Check out the [example](example/) directory for complete examples including:
