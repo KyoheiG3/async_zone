@@ -55,7 +55,7 @@ class AsyncZoneProviderElement extends InheritedElement
   /// Creates an [AsyncZoneProviderElement] for the given [widget].
   AsyncZoneProviderElement(this._widget) : super(_widget);
 
-  final _cache = Expando<Object>('AsyncZone cache');
+  final _cache = Expando<({Object? value})>('AsyncZone cache');
   final _errors = Expando<Object>('AsyncZone errors');
   final _tasks = <Future<dynamic>>{};
 
@@ -126,12 +126,12 @@ class AsyncZoneProviderElement extends InheritedElement
   T use<T>(Future<T> future) {
     final cached = _cache[future];
     if (cached != null) {
-      return cached as T;
+      return cached.value as T;
     }
 
     future
         .then((value) {
-          _cache[future] = value as Object;
+          _cache[future] = (value: value);
         })
         .onError((_, _) {
           // Do nothing

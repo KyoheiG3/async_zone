@@ -44,6 +44,31 @@ class CachedTestWidget extends ZoneWidget {
   }
 }
 
+class NullableTestWidget extends ZoneWidget {
+  const NullableTestWidget({super.key, required this.future});
+
+  final Future<String?> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = AsyncZone.of(context).use(future);
+    return Text(value ?? 'NULL');
+  }
+}
+
+class NullableCachedTestWidget extends ZoneWidget {
+  const NullableCachedTestWidget({super.key, required this.future});
+
+  final Future<String?> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final value1 = AsyncZone.of(context).use(future);
+    final value2 = AsyncZone.of(context).use(future);
+    return Text('${value1 ?? 'NULL'}-${value2 ?? 'NULL'}');
+  }
+}
+
 class ThrowingZoneWidget extends ZoneWidget {
   const ThrowingZoneWidget({super.key, required this.future});
 

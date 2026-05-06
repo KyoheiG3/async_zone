@@ -211,6 +211,65 @@ void main() {
       });
     });
 
+    group('given a Future resolving to null', () {
+      testWidgets('should transition from fallback to the null value',
+          (tester) async {
+        // Given
+        final future = Future<String?>.delayed(
+          const Duration(milliseconds: 50),
+          () => null,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AsyncZone(
+              fallback: const Text('Loading...'),
+              child: NullableTestWidget(future: future),
+            ),
+          ),
+        );
+
+        // Then - fallback is shown while pending
+        expect(find.text('Loading...'), findsOneWidget);
+
+        // When - Future completes with null
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Then - null is rendered without infinite suspend
+        expect(find.text('Loading...'), findsNothing);
+        expect(find.text('NULL'), findsOneWidget);
+      });
+
+      testWidgets('should cache the null value across use() calls',
+          (tester) async {
+        // Given
+        var callCount = 0;
+        final future = Future<String?>.delayed(
+          const Duration(milliseconds: 50),
+          () {
+            callCount++;
+            return null;
+          },
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AsyncZone(
+              fallback: const Text('Loading...'),
+              child: NullableCachedTestWidget(future: future),
+            ),
+          ),
+        );
+
+        // When - Future completes
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Then - Future is invoked once and the null result is cached
+        expect(callCount, 1);
+        expect(find.text('NULL-NULL'), findsOneWidget);
+      });
+    });
+
     group('given no AsyncZone ancestor', () {
       group('when of() is called', () {
         testWidgets('should throw FlutterError', (tester) async {
