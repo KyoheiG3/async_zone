@@ -10,6 +10,7 @@ A Flutter package that provides declarative error handling for widget trees, ins
 - 🎯 **ZoneWidget Integration**: Seamless error handling with ZoneWidget
 - 🔄 **Reset Capability**: Recover from errors with built-in reset functionality
 - 📊 **Error Callbacks**: Log and report errors with onError callback
+- 🔑 **Reset Keys**: Automatically reset when external values change
 - 🚀 **Simple API**: Minimal boilerplate with powerful capabilities
 
 ## Installation
@@ -117,6 +118,45 @@ class MyButton extends ZoneWidget {
 
 ## Advanced Usage
 
+### Auto-reset with `resetKeys`
+
+Pass `resetKeys` to automatically reset the boundary when external values change. Useful when a route argument, user id, or query key changes and the previous error is no longer relevant:
+
+```dart
+ErrorBoundary(
+  resetKeys: [userId],
+  builder: (context, error, reset) => ErrorView(
+    error: error,
+    onRetry: reset,
+  ),
+  child: UserProfile(userId: userId),
+)
+```
+
+When any value in `resetKeys` differs from the previous render (compared by equality), the error state clears and `onReset` fires.
+
+### Nested boundaries
+
+When `ErrorBoundary` is nested, errors thrown by a fallback escalate to the next outer `ErrorBoundary`, mirroring React's error boundary semantics. This applies to:
+
+- Errors thrown synchronously inside a fallback `builder`
+- Errors thrown by a `ZoneWidget` rendered inside the fallback
+
+```dart
+ErrorBoundary( // outer - handles what inner cannot
+  builder: (context, error, reset) => Text('Outer: $error'),
+  child: ErrorBoundary( // inner
+    builder: (context, error, reset) {
+      if (error is AuthException) throw error; // delegate to outer
+      return RetryView(error: error, onRetry: reset);
+    },
+    child: HomePage(),
+  ),
+)
+```
+
+If no outer boundary exists, the rethrow surfaces as an unhandled build error.
+
 ### Accessing Error Boundary from Descendants
 
 You can manually trigger error boundaries from anywhere in the tree. Unlike automatic error catching which requires `ZoneWidget`, manual triggering works from **any widget** (including regular `StatelessWidget` or `StatefulWidget`):
@@ -147,12 +187,13 @@ provider.resetBoundary();
 
 ### ErrorBoundary
 
-| Property  | Type                   | Description                               |
-| --------- | ---------------------- | ----------------------------------------- |
-| `builder` | `ErrorFallbackBuilder` | Builder for fallback UI when error occurs |
-| `child`   | `Widget`               | Child widget to wrap                      |
-| `onError` | `Function?`            | Callback when error is caught             |
-| `onReset` | `Function?`            | Callback when boundary is reset           |
+| Property    | Type                   | Description                                  |
+| ----------- | ---------------------- | -------------------------------------------- |
+| `builder`   | `ErrorFallbackBuilder` | Builder for fallback UI when error occurs    |
+| `child`     | `Widget`               | Child widget to wrap                         |
+| `onError`   | `Function?`            | Callback when error is caught                |
+| `onReset`   | `Function?`            | Callback when boundary is reset              |
+| `resetKeys` | `List<Object?>?`       | Auto-reset when any of these values change   |
 
 **Methods:**
 
