@@ -140,6 +140,161 @@ void main() {
     });
   });
 
+  group('given resetKeys', () {
+    testWidgets('should reset when keys change while in error state', (
+      tester,
+    ) async {
+      // Given
+      var keys = [1];
+      late StateSetter setOuterState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return ErrorBoundary(
+                resetKeys: keys,
+                builder: (context, error, reset) =>
+                    Text('Error: $error'),
+                child: ThrowingWidget(
+                  shouldThrow: keys.first == 1,
+                  message: 'boom',
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(find.text('Error: boom'), findsOneWidget);
+
+      // When - resetKeys change to a list whose values differ
+      setOuterState(() => keys = [2]);
+      await tester.pump();
+
+      // Then - the boundary resets and renders the (now non-throwing) child
+      expect(find.text('Error: boom'), findsNothing);
+      expect(find.text('Normal: boom'), findsOneWidget);
+    });
+
+    testWidgets('should not reset when keys are deeply equal', (tester) async {
+      // Given
+      var keys = [1, 'a'];
+      late StateSetter setOuterState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return ErrorBoundary(
+                resetKeys: keys,
+                builder: (context, error, reset) =>
+                    Text('Error: $error'),
+                child: const ThrowingWidget(message: 'boom'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(find.text('Error: boom'), findsOneWidget);
+
+      // When - a fresh list with the same values is passed
+      setOuterState(() => keys = [1, 'a']);
+      await tester.pump();
+
+      // Then - boundary remains in error state (no spurious reset)
+      expect(find.text('Error: boom'), findsOneWidget);
+    });
+
+    testWidgets('should invoke onReset when keys change', (tester) async {
+      // Given
+      var keys = [1];
+      var resetCallCount = 0;
+      late StateSetter setOuterState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return ErrorBoundary(
+                resetKeys: keys,
+                onReset: (_) => resetCallCount++,
+                builder: (context, error, reset) =>
+                    Text('Error: $error'),
+                child: ThrowingWidget(
+                  shouldThrow: keys.first == 1,
+                  message: 'boom',
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(resetCallCount, 0);
+
+      // When - keys change
+      setOuterState(() => keys = [2]);
+      await tester.pump();
+
+      // Then - onReset is invoked exactly once
+      expect(resetCallCount, 1);
+    });
+  });
+
+  group('given nested ErrorBoundary', () {
+    testWidgets(
+      'showBoundary on outer from descendant escalates correctly',
+      (tester) async {
+        // Given - inner descendant explicitly delegates to outer via showBoundary.
+        // Use a Builder that captures the outer provider before the inner
+        // ErrorBoundary intercepts the context.
+        late void Function(Object error, [StackTrace? stackTrace]) outerShow;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ErrorBoundary(
+              builder: (context, error, reset) =>
+                  Text('Outer: $error'),
+              child: Builder(
+                builder: (outerContext) {
+                  outerShow = ErrorBoundary.of(outerContext).showBoundary;
+                  return ErrorBoundary(
+                    builder: (context, error, reset) =>
+                        Text('Inner: $error'),
+                    child: Builder(
+                      builder: (innerContext) {
+                        return ElevatedButton(
+                          onPressed: () => outerShow('escalated'),
+                          child: const Text('Escalate'),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        // When - tap escalates to outer
+        await tester.tap(find.text('Escalate'));
+        await tester.pump();
+
+        // Then - the outer boundary handles the error, inner is unaffected
+        expect(find.text('Outer: escalated'), findsOneWidget);
+        expect(find.text('Inner: escalated'), findsNothing);
+      },
+    );
+  });
+
   group('ErrorBoundary.of()', () {
     group('given no ErrorBoundary ancestor', () {
       group('when of() is called', () {

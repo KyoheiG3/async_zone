@@ -66,6 +66,7 @@ class ErrorBoundary extends ErrorZoneWidget<ErrorBoundaryState> {
     required this.builder,
     this.onError,
     this.onReset,
+    this.resetKeys,
     required this.child,
   });
 
@@ -83,6 +84,17 @@ class ErrorBoundary extends ErrorZoneWidget<ErrorBoundaryState> {
   /// This callback receives an optional argument that was passed to the
   /// reset function from the fallback builder.
   final void Function(Object? arg)? onReset;
+
+  /// Keys that, when changed, will reset the error boundary automatically.
+  ///
+  /// When any value in this list changes (compared by equality) between
+  /// rebuilds, the error state is cleared without invoking [onReset]. This
+  /// is useful for resetting the boundary when an external value (e.g. a
+  /// route argument or query key) changes and the previous error no longer
+  /// applies.
+  ///
+  /// Pass `null` (the default) to disable this behavior.
+  final List<Object?>? resetKeys;
 
   /// The widget below this widget in the tree.
   ///
@@ -141,16 +153,60 @@ class ErrorBoundary extends ErrorZoneWidget<ErrorBoundaryState> {
     }
 
     final error = state.error;
-    if (error != null) {
-      return builder(context, error, resetBoundary);
-    }
+    final inner = error != null
+        ? builder(context, error, resetBoundary)
+        : ErrorBoundaryProvider(
+            resetBoundary: resetBoundary,
+            showBoundary: showErrorBoundary,
+            child: child,
+          );
 
-    return ErrorBoundaryProvider(
-      resetBoundary: resetBoundary,
-      showBoundary: showErrorBoundary,
-      child: child,
-    );
+    final keys = resetKeys;
+    return keys == null
+        ? inner
+        : _ResetKeysWatcher(
+            keys: keys,
+            onChanged: () => resetBoundary(),
+            child: inner,
+          );
   }
+}
+
+class _ResetKeysWatcher extends StatefulWidget {
+  const _ResetKeysWatcher({
+    required this.keys,
+    required this.onChanged,
+    required this.child,
+  });
+
+  final List<Object?> keys;
+  final VoidCallback onChanged;
+  final Widget child;
+
+  @override
+  State<_ResetKeysWatcher> createState() => _ResetKeysWatcherState();
+}
+
+class _ResetKeysWatcherState extends State<_ResetKeysWatcher> {
+  @override
+  void didUpdateWidget(_ResetKeysWatcher oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_listsEqual(oldWidget.keys, widget.keys)) {
+      widget.onChanged();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+bool _listsEqual(List<Object?> a, List<Object?> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// An [InheritedWidget] that provides access to error boundary functions.
