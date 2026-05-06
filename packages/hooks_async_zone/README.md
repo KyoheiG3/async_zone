@@ -8,7 +8,7 @@ A Flutter package that provides [flutter_hooks](https://pub.dev/packages/flutter
 
 - 🎣 **HookZoneWidget**: Use Flutter hooks with AsyncZone
 - 🛡️ **HookErrorZoneWidget**: Combine hooks with error boundaries
-- 🔄 **useZone**: Hook for consuming async operations
+- 🔄 **useAsyncZone**: Hook for consuming async operations
 - 🚀 **HookZoneBuilder**: Convenience widget for inline usage
 
 ## Installation
@@ -30,7 +30,7 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
-    final data = useZone(fetchData());
+    final data = useAsyncZone(fetchData());
 
     return Column(
       children: [
@@ -89,7 +89,7 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final state = useState(0);
-    final data = useZone(fetchData());
+    final data = useAsyncZone(fetchData());
     return Text('$data');
   }
 }
@@ -131,12 +131,12 @@ HookZoneBuilder(
 )
 ```
 
-### useZone
+### useAsyncZone
 
 Hook for consuming async operations:
 
 ```dart
-final data = useZone(fetchData());
+final data = useAsyncZone(fetchData());
 ```
 
 Equivalent to:

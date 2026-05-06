@@ -8,7 +8,7 @@
 
 - 🎣 **HookZoneWidget**: Flutter hooks を AsyncZone と共に使用
 - 🛡️ **HookErrorZoneWidget**: hooks とエラーバウンダリの組み合わせ
-- 🔄 **useZone**: 非同期操作を消費するための hook
+- 🔄 **useAsyncZone**: 非同期操作を消費するための hook
 - 🚀 **HookZoneBuilder**: インライン使用のための便利なウィジェット
 
 ## インストール
@@ -30,7 +30,7 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
-    final data = useZone(fetchData());
+    final data = useAsyncZone(fetchData());
 
     return Column(
       children: [
@@ -89,7 +89,7 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final state = useState(0);
-    final data = useZone(fetchData());
+    final data = useAsyncZone(fetchData());
     return Text('$data');
   }
 }
@@ -131,12 +131,12 @@ HookZoneBuilder(
 )
 ```
 
-### useZone
+### useAsyncZone
 
 非同期操作を消費するための hook：
 
 ```dart
-final data = useZone(fetchData());
+final data = useAsyncZone(fetchData());
 ```
 
 次と同等です：

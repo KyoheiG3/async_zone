@@ -23,7 +23,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useZone(asyncOperation());
+///     final result = useAsyncZone(asyncOperation());
 ///     return Text('Result: $result');
 ///   }
 /// }
@@ -74,7 +74,7 @@ class StatelessHookErrorZoneElement<T> extends StatelessElement
 /// class _MyStatefulErrorWidgetState extends State<MyStatefulErrorWidget> {
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useZone(asyncOperation());
+///     final result = useAsyncZone(asyncOperation());
 ///     return Text('Result: $result');
 ///   }
 /// }

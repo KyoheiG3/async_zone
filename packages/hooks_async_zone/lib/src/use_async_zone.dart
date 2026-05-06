@@ -23,7 +23,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final userData = useZone(fetchUserData());
+///     final userData = useAsyncZone(fetchUserData());
 ///     return Text('User: ${userData.name}');
 ///   }
 /// }
@@ -31,7 +31,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 /// Throws:
 ///   - [StateError]: If no [AsyncZone] is found in the widget tree.
-T useZone<T>(Future<T> future) {
+T useAsyncZone<T>(Future<T> future) {
   final context = useContext();
 
   return AsyncZone.of(context).use(future);

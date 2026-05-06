@@ -7,7 +7,7 @@ import 'package:hooks_async_zone/hooks_async_zone.dart';
 import 'helper/test_widgets.dart';
 
 void main() {
-  group('useZone', () {
+  group('useAsyncZone', () {
     group('given a Future', () {
       group('when Future is pending', () {
         testWidgets('should throw Future and show fallback', (tester) async {
@@ -114,7 +114,7 @@ void main() {
 
   group('HookZoneWidget', () {
     group('given a widget that uses hooks and async', () {
-      testWidgets('should work with useState and useZone', (tester) async {
+      testWidgets('should work with useState and useAsyncZone', (tester) async {
         // Given
         var counter = 0;
         final future = Future<String>.delayed(
@@ -316,7 +316,7 @@ void main() {
             child: HookZoneBuilder(
               builder: (context) {
                 final counter = useState(0);
-                final data = useZone(future);
+                final data = useAsyncZone(future);
                 return Column(
                   children: [
                     Text('Counter: ${counter.value}'),

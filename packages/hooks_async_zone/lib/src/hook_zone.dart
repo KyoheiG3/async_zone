@@ -14,7 +14,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useZone(asyncOperation());
+///     final result = useAsyncZone(asyncOperation());
 ///     return Text('Result: $result');
 ///   }
 /// }
@@ -51,7 +51,7 @@ class HookZoneElement extends StatelessElement with HookElement, ZoneElement {
 /// class _MyStatefulWidgetState extends State<MyStatefulWidget> {
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useZone(asyncOperation());
+///     final result = useAsyncZone(asyncOperation());
 ///     return Text('Result: $result');
 ///   }
 /// }
@@ -81,7 +81,7 @@ class StatefulHookZoneElement extends StatefulElement
 /// ```dart
 /// HookZoneBuilder(
 ///   builder: (context) {
-///     final result = useZone(fetchData());
+///     final result = useAsyncZone(fetchData());
 ///     return Text('Data: $result');
 ///   },
 /// )

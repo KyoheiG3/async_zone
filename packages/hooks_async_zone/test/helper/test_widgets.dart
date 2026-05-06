@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_async_zone/hooks_async_zone.dart';
 
-// Helper widgets for useZone tests
+// Helper widgets for useAsyncZone tests
 
 class SimpleHookZoneWidget extends HookZoneWidget {
   const SimpleHookZoneWidget({
@@ -17,7 +17,7 @@ class SimpleHookZoneWidget extends HookZoneWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = useZone(future);
+    final data = useAsyncZone(future);
     return builder(data);
   }
 }
@@ -34,8 +34,8 @@ class MultipleHookZoneWidget extends HookZoneWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data1 = useZone(future1);
-    final data2 = useZone(future2);
+    final data1 = useAsyncZone(future1);
+    final data2 = useAsyncZone(future2);
     return Text('$data1 - $data2');
   }
 }
@@ -50,7 +50,7 @@ class TestHookZoneWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
-    final data = useZone(future);
+    final data = useAsyncZone(future);
 
     return Column(
       children: [
@@ -83,7 +83,7 @@ class _TestStatefulHookZoneWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final data = useZone(widget.future);
+    final data = useAsyncZone(widget.future);
 
     return Column(
       children: [
