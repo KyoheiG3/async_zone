@@ -13,18 +13,28 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 /// Example:
 /// ```dart
-/// class MyErrorWidget extends HookErrorZoneWidget<Exception> {
-///   MyErrorWidget({super.key});
+/// class MyErrorBoundary extends HookErrorZoneWidget<({Object? error})> {
+///   MyErrorBoundary({super.key, required this.child});
+///
+///   final Widget child;
 ///
 ///   @override
-///   Widget buildError(BuildContext context, Exception error) {
-///     return Text('Error: $error');
-///   }
+///   ({Object? error}) getDerivedStateFromError(Object? error) => (error: error);
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useAsyncZone(asyncOperation());
-///     return Text('Result: $result');
+///     final retryCount = useState(0);
+///
+///     if (state.error != null) {
+///       return TextButton(
+///         onPressed: () {
+///           retryCount.value++;
+///           resetErrorBoundary();
+///         },
+///         child: Text('Error: ${state.error} (retried ${retryCount.value})'),
+///       );
+///     }
+///     return child;
 ///   }
 /// }
 /// ```
@@ -59,23 +69,33 @@ class StatelessHookErrorZoneElement<T> extends StatelessElement
 ///
 /// Example:
 /// ```dart
-/// class MyStatefulErrorWidget extends StatefulHookErrorZoneWidget<Exception> {
-///   MyStatefulErrorWidget({super.key});
+/// class MyStatefulErrorBoundary extends StatefulHookErrorZoneWidget<({Object? error})> {
+///   MyStatefulErrorBoundary({super.key, required this.child});
+///
+///   final Widget child;
 ///
 ///   @override
-///   Widget buildError(BuildContext context, Exception error) {
-///     return Text('Error: $error');
-///   }
+///   ({Object? error}) getDerivedStateFromError(Object? error) => (error: error);
 ///
 ///   @override
-///   State<MyStatefulErrorWidget> createState() => _MyStatefulErrorWidgetState();
+///   State<MyStatefulErrorBoundary> createState() => _MyStatefulErrorBoundaryState();
 /// }
 ///
-/// class _MyStatefulErrorWidgetState extends State<MyStatefulErrorWidget> {
+/// class _MyStatefulErrorBoundaryState extends State<MyStatefulErrorBoundary> {
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final result = useAsyncZone(asyncOperation());
-///     return Text('Result: $result');
+///     final retryCount = useState(0);
+///
+///     if (widget.state.error != null) {
+///       return TextButton(
+///         onPressed: () {
+///           retryCount.value++;
+///           widget.resetErrorBoundary();
+///         },
+///         child: Text('Error: ${widget.state.error} (retried ${retryCount.value})'),
+///       );
+///     }
+///     return widget.child;
 ///   }
 /// }
 /// ```

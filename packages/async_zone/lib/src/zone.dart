@@ -13,9 +13,13 @@ import 'zone_element.dart';
 /// Example:
 /// ```dart
 /// class MyZoneWidget extends ZoneWidget {
+///   const MyZoneWidget({super.key, required this.future});
+///
+///   final Future<String> future;
+///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final data = AsyncZone.of(context).use(myAsyncOperation());
+///     final data = AsyncZone.of(context).use(future);
 ///     return Text(data);
 ///   }
 /// }
@@ -48,14 +52,18 @@ class StatelessZoneElement extends StatelessElement with ZoneElement {
 /// Example:
 /// ```dart
 /// class MyStatefulZoneWidget extends StatefulZoneWidget {
+///   const MyStatefulZoneWidget({super.key});
+///
 ///   @override
 ///   State<MyStatefulZoneWidget> createState() => _MyStatefulZoneWidgetState();
 /// }
 ///
 /// class _MyStatefulZoneWidgetState extends State<MyStatefulZoneWidget> {
+///   late final _future = myAsyncOperation();
+///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final data = AsyncZone.of(context).use(myAsyncOperation());
+///     final data = AsyncZone.of(context).use(_future);
 ///     return Text(data);
 ///   }
 /// }
@@ -86,12 +94,14 @@ class StatefulZoneElement extends StatefulElement with ZoneElement {
 ///
 /// Example:
 /// ```dart
+/// final future = fetchData(); // hold the same instance across rebuilds
+///
 /// AsyncZone(
 ///   fallback: const CircularProgressIndicator(),
 ///   child: ZoneBuilder(
 ///     builder: (context) {
-///       // Throwing a Future triggers async handling
-///       throw fetchData();
+///       final data = AsyncZone.of(context).use(future);
+///       return Text(data);
 ///     },
 ///   ),
 /// )

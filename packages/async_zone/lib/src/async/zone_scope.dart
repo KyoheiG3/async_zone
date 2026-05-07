@@ -6,7 +6,7 @@
 /// Example:
 /// ```dart
 /// final scope = AsyncZone.of(context);
-/// final data = scope.use(fetchData());
+/// final data = scope.use(future);
 /// ```
 abstract class AsyncZoneScope {
   /// Consumes a future and returns its value when complete.

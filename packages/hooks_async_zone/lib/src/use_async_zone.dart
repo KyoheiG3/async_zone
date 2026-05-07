@@ -23,7 +23,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     final userData = useAsyncZone(fetchUserData());
+///     final future = useMemoized(() => fetchUserData());
+///     final userData = useAsyncZone(future);
 ///     return Text('User: ${userData.name}');
 ///   }
 /// }
