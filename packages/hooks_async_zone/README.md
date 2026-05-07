@@ -137,7 +137,7 @@ HookZoneBuilder(
 
 ### useAsyncZone
 
-Returns the [`AsyncZoneScope`](../async_zone) of the surrounding `AsyncZone`. The hook itself only locates the scope — the actual async consumption happens via `scope.use(future)`, which behaves like React's `use()` and **may be called inside conditionals, loops, or after early returns**:
+Returns the [`AsyncZoneScope`](../async_zone) of the surrounding `AsyncZone`. The hook itself only locates the scope — the actual async consumption happens via `zone.use(future)`, which behaves like React's `use()` and **may be called inside conditionals, loops, or after early returns**:
 
 ```dart
 final zone = useAsyncZone();

@@ -6,7 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 /// Unlike a typical "use" hook, this does not consume a future itself. It
 /// only locates the nearest [AsyncZone] ancestor and exposes its
 /// [AsyncZoneScope.use] method, which mirrors React's `use()` API: you can
-/// call `scope.use(future)` inside conditionals, loops, or after early
+/// call `zone.use(future)` inside conditionals, loops, or after early
 /// returns — it does not need to obey the Rules of Hooks.
 ///
 /// Returns:
