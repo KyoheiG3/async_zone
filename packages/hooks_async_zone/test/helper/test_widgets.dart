@@ -17,7 +17,7 @@ class SimpleHookZoneWidget extends HookZoneWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = useAsyncZone(future);
+    final data = useAsyncZone().use(future);
     return builder(data);
   }
 }
@@ -34,8 +34,9 @@ class MultipleHookZoneWidget extends HookZoneWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data1 = useAsyncZone(future1);
-    final data2 = useAsyncZone(future2);
+    final zone = useAsyncZone();
+    final data1 = zone.use(future1);
+    final data2 = zone.use(future2);
     return Text('$data1 - $data2');
   }
 }
@@ -50,7 +51,7 @@ class TestHookZoneWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
-    final data = useAsyncZone(future);
+    final data = useAsyncZone().use(future);
 
     return Column(
       children: [
@@ -83,7 +84,7 @@ class _TestStatefulHookZoneWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final data = useAsyncZone(widget.future);
+    final data = useAsyncZone().use(widget.future);
 
     return Column(
       children: [

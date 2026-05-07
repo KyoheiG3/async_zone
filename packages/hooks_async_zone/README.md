@@ -8,7 +8,7 @@ A Flutter package that provides [flutter_hooks](https://pub.dev/packages/flutter
 
 - 🎣 **HookZoneWidget**: Use Flutter hooks with AsyncZone
 - 🛡️ **HookErrorZoneWidget**: Combine hooks with error boundaries
-- 🔄 **useAsyncZone**: Hook for consuming async operations
+- 🔄 **useAsyncZone**: Hook that exposes the surrounding `AsyncZoneScope`
 - 🚀 **HookZoneBuilder**: Convenience widget for inline usage
 
 ## Installation
@@ -30,9 +30,10 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
+    final zone = useAsyncZone();
     // Memoize the future so the same instance is reused across rebuilds.
     final future = useMemoized(() => fetchData());
-    final data = useAsyncZone(future);
+    final data = zone.use(future);
 
     return Column(
       children: [
@@ -92,7 +93,7 @@ class MyWidget extends HookZoneWidget {
   Widget build(BuildContext context) {
     final state = useState(0);
     final future = useMemoized(() => fetchData());
-    final data = useAsyncZone(future);
+    final data = useAsyncZone().use(future);
     return Text('$data');
   }
 }
@@ -136,18 +137,25 @@ HookZoneBuilder(
 
 ### useAsyncZone
 
-Hook for consuming async operations. Like `AsyncZone.of(context).use()`, the cache is keyed on the Future instance, so memoize the future (e.g. with `useMemoized`) instead of calling `fetchData()` directly inside `build()` — otherwise every rebuild produces a new Future and the cache never matches.
+Returns the [`AsyncZoneScope`](../async_zone) of the surrounding `AsyncZone`. The hook itself only locates the scope — the actual async consumption happens via `scope.use(future)`, which behaves like React's `use()` and **may be called inside conditionals, loops, or after early returns**:
 
 ```dart
+final zone = useAsyncZone();
 final future = useMemoized(() => fetchData());
-final data = useAsyncZone(future);
+
+if (!showDetails) return const SizedBox.shrink();
+
+final data = zone.use(future);
 ```
+
+The cache is keyed on the Future instance, so memoize the future (e.g. with `useMemoized`) instead of calling `fetchData()` directly inside `build()` — otherwise every rebuild produces a new Future and the cache never matches.
 
 Equivalent to:
 
 ```dart
+final zone = AsyncZone.of(context);
 final future = useMemoized(() => fetchData());
-final data = AsyncZone.of(context).use(future);
+final data = zone.use(future);
 ```
 
 ## Related Packages

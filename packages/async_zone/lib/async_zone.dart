@@ -1,4 +1,5 @@
 export 'src/async/zone.dart';
+export 'src/async/zone_scope.dart' show AsyncZoneScope;
 export 'src/error/zone.dart';
 export 'src/error/zone_element.dart';
 export 'src/zone.dart';

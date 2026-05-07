@@ -316,7 +316,7 @@ void main() {
             child: HookZoneBuilder(
               builder: (context) {
                 final counter = useState(0);
-                final data = useAsyncZone(future);
+                final data = useAsyncZone().use(future);
                 return Column(
                   children: [
                     Text('Counter: ${counter.value}'),

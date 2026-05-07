@@ -1,39 +1,41 @@
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-/// A Flutter hook that executes an asynchronous operation within an async zone.
+/// A Flutter hook that returns the [AsyncZoneScope] from the widget tree.
 ///
-/// This hook retrieves the [AsyncZone] from the widget tree and uses it to manage
-/// the provided [future]. It's a convenient way to integrate async operations with
-/// Flutter hooks and zone management.
-///
-/// The hook automatically handles the lifecycle of the async operation and updates
-/// the widget when the future completes.
-///
-/// Parameters:
-///   - [future]: The asynchronous operation to execute within the zone.
+/// Unlike a typical "use" hook, this does not consume a future itself. It
+/// only locates the nearest [AsyncZone] ancestor and exposes its
+/// [AsyncZoneScope.use] method, which mirrors React's `use()` API: you can
+/// call `scope.use(future)` inside conditionals, loops, or after early
+/// returns — it does not need to obey the Rules of Hooks.
 ///
 /// Returns:
-///   The result of type [T] from the future once it completes.
+///   The [AsyncZoneScope] for the surrounding [AsyncZone].
 ///
 /// Example:
 /// ```dart
 /// class MyWidget extends HookZoneWidget {
-///   const MyWidget({super.key});
+///   const MyWidget({super.key, required this.showUser});
+///
+///   final bool showUser;
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
+///     final zone = useAsyncZone();
 ///     final future = useMemoized(() => fetchUserData());
-///     final userData = useAsyncZone(future);
-///     return Text('User: ${userData.name}');
+///
+///     if (!showUser) return const SizedBox.shrink();
+///
+///     final user = zone.use(future);
+///     return Text('User: ${user.name}');
 ///   }
 /// }
 /// ```
 ///
 /// Throws:
-///   - [StateError]: If no [AsyncZone] is found in the widget tree.
-T useAsyncZone<T>(Future<T> future) {
+///   - [FlutterError]: If no [AsyncZone] is found in the widget tree.
+AsyncZoneScope useAsyncZone() {
   final context = useContext();
 
-  return AsyncZone.of(context).use(future);
+  return AsyncZone.of(context);
 }

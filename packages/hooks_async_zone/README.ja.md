@@ -8,7 +8,7 @@
 
 - 🎣 **HookZoneWidget**: Flutter hooks を AsyncZone と共に使用
 - 🛡️ **HookErrorZoneWidget**: hooks とエラーバウンダリの組み合わせ
-- 🔄 **useAsyncZone**: 非同期操作を消費するための hook
+- 🔄 **useAsyncZone**: 周囲の `AsyncZoneScope` を取得する hook
 - 🚀 **HookZoneBuilder**: インライン使用のための便利なウィジェット
 
 ## インストール
@@ -30,9 +30,10 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
+    final zone = useAsyncZone();
     // future をメモ化してリビルド間で同じインスタンスを再利用する
     final future = useMemoized(() => fetchData());
-    final data = useAsyncZone(future);
+    final data = zone.use(future);
 
     return Column(
       children: [
@@ -92,7 +93,7 @@ class MyWidget extends HookZoneWidget {
   Widget build(BuildContext context) {
     final state = useState(0);
     final future = useMemoized(() => fetchData());
-    final data = useAsyncZone(future);
+    final data = useAsyncZone().use(future);
     return Text('$data');
   }
 }
@@ -136,18 +137,25 @@ HookZoneBuilder(
 
 ### useAsyncZone
 
-非同期操作を消費するための hook です。`AsyncZone.of(context).use()` と同様に Future インスタンスをキーにキャッシュするため、`build()` 内で直接 `fetchData()` を呼ぶのではなく `useMemoized` などで future をメモ化してください — そうしないとリビルドのたびに新しい Future が生成され、キャッシュは一度もヒットしません。
+周囲の `AsyncZone` の [`AsyncZoneScope`](../async_zone) を返す hook です。hook 自体はスコープを取得するだけで、実際の非同期消費は `scope.use(future)` で行います。`scope.use` は React の `use()` と同様に **条件分岐・ループ・早期リターンの後でも呼び出し可能** です：
 
 ```dart
+final zone = useAsyncZone();
 final future = useMemoized(() => fetchData());
-final data = useAsyncZone(future);
+
+if (!showDetails) return const SizedBox.shrink();
+
+final data = zone.use(future);
 ```
+
+キャッシュは Future インスタンスをキーにするため、`build()` 内で直接 `fetchData()` を呼ぶのではなく `useMemoized` などで future をメモ化してください — そうしないとリビルドのたびに新しい Future が生成され、キャッシュは一度もヒットしません。
 
 次と同等です：
 
 ```dart
+final zone = AsyncZone.of(context);
 final future = useMemoized(() => fetchData());
-final data = AsyncZone.of(context).use(future);
+final data = zone.use(future);
 ```
 
 ## 関連パッケージ
