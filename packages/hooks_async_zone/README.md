@@ -30,7 +30,9 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
-    final data = useAsyncZone(fetchData());
+    // Memoize the future so the same instance is reused across rebuilds.
+    final future = useMemoized(() => fetchData());
+    final data = useAsyncZone(future);
 
     return Column(
       children: [
@@ -89,7 +91,8 @@ class MyWidget extends HookZoneWidget {
   @override
   Widget build(BuildContext context) {
     final state = useState(0);
-    final data = useAsyncZone(fetchData());
+    final future = useMemoized(() => fetchData());
+    final data = useAsyncZone(future);
     return Text('$data');
   }
 }
@@ -133,15 +136,18 @@ HookZoneBuilder(
 
 ### useAsyncZone
 
-Hook for consuming async operations:
+Hook for consuming async operations. Like `AsyncZone.of(context).use()`, the cache is keyed on the Future instance, so memoize the future (e.g. with `useMemoized`) instead of calling `fetchData()` directly inside `build()` — otherwise every rebuild produces a new Future and the cache never matches.
 
 ```dart
-final data = useAsyncZone(fetchData());
+final future = useMemoized(() => fetchData());
+final data = useAsyncZone(future);
 ```
 
 Equivalent to:
+
 ```dart
-final data = AsyncZone.of(context).use(fetchData());
+final future = useMemoized(() => fetchData());
+final data = AsyncZone.of(context).use(future);
 ```
 
 ## Related Packages

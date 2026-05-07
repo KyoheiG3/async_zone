@@ -50,17 +50,27 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyDataWidget extends ZoneWidget {
+class MyDataWidget extends StatefulZoneWidget {
+  const MyDataWidget({super.key});
+
+  @override
+  State<MyDataWidget> createState() => _MyDataWidgetState();
+}
+
+class _MyDataWidgetState extends State<MyDataWidget> {
+  // Hold the future in a field so the same instance is reused across rebuilds.
+  late final Future<String> _future = _fetchData();
+
+  Future<String> _fetchData() async {
+    await Future.delayed(Duration(seconds: 2));
+    return 'Hello, AsyncZone!';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Using use() for caching
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(_future);
     return Text(data);
-  }
-
-  Future<String> fetchData() async {
-    await Future.delayed(Duration(seconds: 2));
-    return 'Hello, AsyncZone!';
   }
 }
 ```
@@ -123,11 +133,20 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 **Correct:**
 
 ```dart
-class MyWidget extends ZoneWidget {
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final _future = fetchData();
+
   @override
   Widget build(BuildContext context) {
-    throw fetchData();  // ✅ Throws future in build()
-    // Or: final data = AsyncZone.of(context).use(fetchData());
+    throw _future;  // ✅ Throws future in build()
+    // Or: final data = AsyncZone.of(context).use(_future);
   }
 }
 ```
@@ -178,9 +197,11 @@ class MyWidget extends ZoneHookWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
+    // Memoize the future so the same instance is reused across rebuilds.
+    final future = useMemoized(() => fetchData());
 
     // ✅ Works with both Hooks and AsyncZone!
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(future);
 
     return Column(
       children: [
@@ -208,19 +229,28 @@ class MyWidget extends ZoneHookWidget {
 
 #### Recommended - Caching with use()
 
-The recommended way is to use `use()` which handles caching automatically:
+`use()` keys its cache on the **identity of the Future instance**: the first call schedules the future and throws it; subsequent rebuilds with the same instance return the cached value. This means you must hold the future somewhere stable (a `late final` field, a parent widget's state, `useMemoized`, etc.). Calling `fetchData()` directly inside `build()` creates a new `Future` on every rebuild, the cache never matches, and the widget falls into an infinite rebuild loop.
 
 ```dart
-class MyWidget extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    final data = AsyncZone.of(context).use(fetchData());
-    return Text(data);
-  }
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
 
-  Future<String> fetchData() async {
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final Future<String> _future = _fetchData();
+
+  Future<String> _fetchData() async {
     await Future.delayed(Duration(seconds: 2));
     return 'Hello, AsyncZone!';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = AsyncZone.of(context).use(_future);
+    return Text(data);
   }
 }
 ```
@@ -261,7 +291,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 **Direct `throw` vs `use()`:**
 
-- **`use()`** (Recommended): Automatic caching and simpler to use
+- **`use()`** (Recommended): Identity-based caching of the Future, simpler to use as long as the same instance is passed across rebuilds
 - **Direct `throw`**: More control but requires careful state management
 
 ## Advanced Usage
@@ -415,11 +445,13 @@ This widget is useful when you want to use zones without creating a custom widge
 **Example:**
 
 ```dart
+final future = fetchData(); // hold the same instance across rebuilds
+
 AsyncZone(
   fallback: CircularProgressIndicator(),
   child: ZoneBuilder(
     builder: (context) {
-      final data = AsyncZone.of(context).use(fetchData());
+      final data = AsyncZone.of(context).use(future);
       return Text('Data: $data');
     },
   ),
@@ -455,10 +487,19 @@ AsyncZone(
   child: MyWidget(),
 )
 
-class MyWidget extends ZoneWidget {
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final _future = fetchData();
+
   @override
   Widget build(BuildContext context) {
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(_future);
     return Text(data);
   }
 }
@@ -466,8 +507,8 @@ class MyWidget extends ZoneWidget {
 
 **Benefits:**
 
-- Less boilerplate
-- Automatic caching
+- Fallback UI is handled by the parent, not duplicated in every leaf
+- Identity-based caching via `use()` — the future runs once per instance
 - Cleaner separation of concerns
 - Better composability
 

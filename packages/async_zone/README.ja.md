@@ -50,17 +50,27 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyDataWidget extends ZoneWidget {
+class MyDataWidget extends StatefulZoneWidget {
+  const MyDataWidget({super.key});
+
+  @override
+  State<MyDataWidget> createState() => _MyDataWidgetState();
+}
+
+class _MyDataWidgetState extends State<MyDataWidget> {
+  // future をフィールドに保持して、リビルド間で同じインスタンスを再利用する
+  late final Future<String> _future = _fetchData();
+
+  Future<String> _fetchData() async {
+    await Future.delayed(Duration(seconds: 2));
+    return 'Hello, AsyncZone!';
+  }
+
   @override
   Widget build(BuildContext context) {
     // use() を使ってキャッシング
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(_future);
     return Text(data);
-  }
-
-  Future<String> fetchData() async {
-    await Future.delayed(Duration(seconds: 2));
-    return 'Hello, AsyncZone!';
   }
 }
 ```
@@ -123,11 +133,20 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 **正しい使い方:**
 
 ```dart
-class MyWidget extends ZoneWidget {
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final _future = fetchData();
+
   @override
   Widget build(BuildContext context) {
-    throw fetchData();  // ✅ build() 内で future を throw
-    // または: final data = AsyncZone.of(context).use(fetchData());
+    throw _future;  // ✅ build() 内で future を throw
+    // または: final data = AsyncZone.of(context).use(_future);
   }
 }
 ```
@@ -178,9 +197,11 @@ class MyWidget extends ZoneHookWidget {
   @override
   Widget build(BuildContext context) {
     final counter = useState(0);
+    // future をメモ化してリビルド間で同じインスタンスを再利用する
+    final future = useMemoized(() => fetchData());
 
     // ✅ Hooks と AsyncZone の両方が使えます！
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(future);
 
     return Column(
       children: [
@@ -208,19 +229,28 @@ class MyWidget extends ZoneHookWidget {
 
 #### 推奨 - use() を使ったキャッシング
 
-推奨される方法は、自動的にキャッシングを処理する `use()` を使用することです：
+`use()` は **Future インスタンスの同一性** をキーにキャッシュします。最初の呼び出しで future をスケジュールして throw し、以降のリビルドで同じインスタンスを渡すとキャッシュされた値を返します。そのため future はどこかで安定して保持する必要があります（`late final` フィールド、親ウィジェットの state、`useMemoized` など）。`build()` の中で直接 `fetchData()` を呼ぶとリビルドのたびに新しい `Future` が生成され、キャッシュは一度もヒットせず、無限リビルドループに陥ります。
 
 ```dart
-class MyWidget extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    final data = AsyncZone.of(context).use(fetchData());
-    return Text(data);
-  }
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
 
-  Future<String> fetchData() async {
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final Future<String> _future = _fetchData();
+
+  Future<String> _fetchData() async {
     await Future.delayed(Duration(seconds: 2));
     return 'Hello, AsyncZone!';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = AsyncZone.of(context).use(_future);
+    return Text(data);
   }
 }
 ```
@@ -261,7 +291,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 **直接 `throw` vs `use()`:**
 
-- **`use()`**（推奨）: 自動キャッシングでより簡単に使用できます
+- **`use()`**（推奨）: Future インスタンスの同一性ベースのキャッシュ。同じインスタンスをリビルド間で渡すかぎり簡単に使えます
 - **直接 `throw`**: より多くの制御が可能ですが、慎重な状態管理が必要です
 
 ## 高度な使用方法
@@ -415,11 +445,13 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 **例:**
 
 ```dart
+final future = fetchData(); // リビルド間で同じインスタンスを保持する
+
 AsyncZone(
   fallback: CircularProgressIndicator(),
   child: ZoneBuilder(
     builder: (context) {
-      final data = AsyncZone.of(context).use(fetchData());
+      final data = AsyncZone.of(context).use(future);
       return Text('Data: $data');
     },
   ),
@@ -455,10 +487,19 @@ AsyncZone(
   child: MyWidget(),
 )
 
-class MyWidget extends ZoneWidget {
+class MyWidget extends StatefulZoneWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final _future = fetchData();
+
   @override
   Widget build(BuildContext context) {
-    final data = AsyncZone.of(context).use(fetchData());
+    final data = AsyncZone.of(context).use(_future);
     return Text(data);
   }
 }
@@ -466,8 +507,8 @@ class MyWidget extends ZoneWidget {
 
 **利点:**
 
-- ボイラープレートが少ない
-- 自動キャッシング
+- フォールバック UI を親に集約でき、各 leaf に重複させずに済む
+- `use()` による Future インスタンス同一性ベースのキャッシュ — 同じインスタンスについて future は1回だけ実行される
 - 関心の分離がより明確
 - より良い構成可能性
 
