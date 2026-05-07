@@ -120,8 +120,8 @@ AsyncZone(
 )
 
 // 子孫からのアクセス
-final scope = AsyncZone.of(context);
-final data = scope.use(fetchData());
+final zone = AsyncZone.of(context);
+final data = zone.use(fetchData());
 ```
 
 ### ErrorZoneWidget

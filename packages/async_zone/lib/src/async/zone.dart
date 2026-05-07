@@ -73,8 +73,8 @@ class AsyncZone extends StatelessWidget {
   ///
   /// Example:
   /// ```dart
-  /// final asyncZone = AsyncZone.of(context);
-  /// final data = asyncZone.use(future);
+  /// final zone = AsyncZone.of(context);
+  /// final data = zone.use(future);
   /// ```
   static AsyncZoneScope of(BuildContext context) {
     final element = context
