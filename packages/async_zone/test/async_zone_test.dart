@@ -298,6 +298,41 @@ void main() {
       });
     });
 
+    group('given a non-ZoneWidget caller inside an AsyncZone', () {
+      group('when of() is called', () {
+        testWidgets(
+          'should throw FlutterError mentioning ZoneWidget',
+          (tester) async {
+            // Given - a regular StatelessWidget calls AsyncZone.of() during
+            // build while wrapped in an AsyncZone (provider exists, but the
+            // calling Element does not mix in ZoneElement)
+            await tester.pumpWidget(
+              MaterialApp(
+                home: AsyncZone(
+                  fallback: const Text('Loading...'),
+                  child: Builder(
+                    builder: (context) {
+                      AsyncZone.of(context);
+                      return const Text('Should not render');
+                    },
+                  ),
+                ),
+              ),
+            );
+
+            // Then - should surface the dedicated ZoneWidget hint, not the
+            // opaque Future-throw error
+            final error = tester.takeException();
+            expect(error, isA<FlutterError>());
+            expect(
+              (error as FlutterError).message,
+              contains('not a ZoneWidget'),
+            );
+          },
+        );
+      });
+    });
+
     group('given a pending Future with sibling ZoneWidget', () {
       group('when allowParallelBuilds is false', () {
         testWidgets('should return Empty instead of building sibling',

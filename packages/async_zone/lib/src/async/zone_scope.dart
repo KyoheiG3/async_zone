@@ -31,3 +31,15 @@ abstract class AsyncZoneProviderScope {
   /// Returns `false` if parallel builds are disabled and there are pending tasks.
   bool canBuildChild();
 }
+
+/// Marker interface implemented by Elements whose build phase can catch the
+/// [Future] thrown by [AsyncZoneScope.use].
+///
+/// The [ZoneElement] mixin implements this. [AsyncZone.of] uses it to detect
+/// when a non-ZoneWidget calls into the scope and produce a descriptive error
+/// instead of letting the thrown Future leak into Flutter's generic build
+/// error handler.
+///
+/// Not exported from the package — this is an internal contract between
+/// `AsyncZone` and the `ZoneElement` mixin.
+abstract interface class AsyncZoneCaller {}

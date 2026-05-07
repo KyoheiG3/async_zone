@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'async/zone_provider.dart';
+import 'async/zone_scope.dart';
 import 'error/zone_provider.dart';
 import 'foundation/empty.dart';
 
@@ -16,7 +17,7 @@ import 'foundation/empty.dart';
 ///
 /// This mixin integrates with [AsyncZoneProvider] to show fallback UI during
 /// async operations and [ErrorZoneProvider] to handle errors gracefully.
-mixin ZoneElement on ComponentElement {
+mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   final Set<Future<dynamic>> _tasks = {};
   dynamic _error;
 

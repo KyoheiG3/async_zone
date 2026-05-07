@@ -93,6 +93,25 @@ class AsyncZone extends StatelessWidget {
       ]);
     }
 
+    if (context is! AsyncZoneCaller) {
+      throw FlutterError.fromParts([
+        ErrorSummary(
+          'AsyncZone.of() was called from a widget that is not a ZoneWidget.',
+        ),
+        ErrorDescription(
+          'AsyncZoneScope.use() throws a Future during build, which only the '
+          'ZoneElement mixin can catch. Calling it from a widget whose Element '
+          'does not mix in ZoneElement leaks the thrown Future and surfaces as '
+          'an opaque error.',
+        ),
+        ErrorHint(
+          'Have the calling widget extend ZoneWidget, StatefulZoneWidget, or '
+          'HookZoneWidget so that its Element mixes in ZoneElement.',
+        ),
+        context.describeElement('The context used was'),
+      ]);
+    }
+
     return element as AsyncZoneScope;
   }
 }
