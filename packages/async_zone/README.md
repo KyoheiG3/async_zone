@@ -255,6 +255,79 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
+#### Common pitfalls
+
+The cache key is the **identity of the `Future` object** itself. Any expression that produces a new `Future` on each rebuild defeats the cache and triggers an infinite rebuild loop. The most common traps:
+
+**❌ Calling the fetcher directly inside `build()`**
+
+```dart
+@override
+Widget build(BuildContext context) {
+  // New Future on every rebuild → never hits cache
+  final data = AsyncZone.of(context).use(fetchData());
+  return Text(data);
+}
+```
+
+**❌ Chaining `.then()` / `.catchError()` / `.timeout()` etc. inside `build()`**
+
+`Future.then()` (and friends) return a *new* `Future` on every call:
+
+```dart
+late final Future<User> _userFuture = fetchUser();
+
+@override
+Widget build(BuildContext context) {
+  // _userFuture.then(...) is a brand-new Future each build
+  final name = AsyncZone.of(context).use(_userFuture.then((u) => u.name));
+  return Text(name);
+}
+```
+
+✅ Cache the chained future itself:
+
+```dart
+late final Future<User> _userFuture = fetchUser();
+late final Future<String> _nameFuture = _userFuture.then((u) => u.name);
+
+@override
+Widget build(BuildContext context) {
+  final name = AsyncZone.of(context).use(_nameFuture);
+  return Text(name);
+}
+```
+
+**❌ Invoking an async closure inline inside `build()`**
+
+A closure invocation produces a new `Future` each time:
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final user = AsyncZone.of(context).use((() async {
+    return await fetchUser();
+  })());
+  return Text(user.name);
+}
+```
+
+✅ Compute the future once outside `build()` and reuse it:
+
+```dart
+late final Future<User> _userFuture = (() async {
+  return await fetchUser();
+})();
+
+@override
+Widget build(BuildContext context) {
+  final user = AsyncZone.of(context).use(_userFuture);
+  return Text(user.name);
+}
+```
+
+**Rule of thumb:** if you can't point to a specific `late final` field, `State` field, hook ref (`useMemoized`, `useState`), or external store that holds the **exact** `Future` instance you're passing to `use()`, the cache will miss. When in doubt, save the future to a named variable first and pass that variable in.
+
 #### Advanced - Direct throw
 
 You can also directly throw futures, but this requires careful management to avoid infinite rebuild loops. The future must be stored in a field to maintain the same instance:

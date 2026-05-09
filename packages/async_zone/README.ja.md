@@ -255,6 +255,79 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
+#### よくある落とし穴
+
+キャッシュキーは **`Future` インスタンスそのものの同一性** です。リビルドのたびに新しい `Future` が生成されるような書き方をすると、キャッシュは一度もヒットせず無限リビルドループに陥ります。代表的な失敗パターン：
+
+**❌ `build()` の中で fetcher を直接呼ぶ**
+
+```dart
+@override
+Widget build(BuildContext context) {
+  // リビルドごとに新しい Future → キャッシュに乗らない
+  final data = AsyncZone.of(context).use(fetchData());
+  return Text(data);
+}
+```
+
+**❌ `build()` の中で `.then()` / `.catchError()` / `.timeout()` などをチェーンする**
+
+`Future.then()` は呼ぶたびに **新しい `Future`** を返します。
+
+```dart
+late final Future<User> _userFuture = fetchUser();
+
+@override
+Widget build(BuildContext context) {
+  // _userFuture.then(...) はリビルドごとに別の Future
+  final name = AsyncZone.of(context).use(_userFuture.then((u) => u.name));
+  return Text(name);
+}
+```
+
+✅ チェーンした Future 自体をフィールドに保持する：
+
+```dart
+late final Future<User> _userFuture = fetchUser();
+late final Future<String> _nameFuture = _userFuture.then((u) => u.name);
+
+@override
+Widget build(BuildContext context) {
+  final name = AsyncZone.of(context).use(_nameFuture);
+  return Text(name);
+}
+```
+
+**❌ `build()` の中で async クロージャを即時実行する**
+
+クロージャ呼び出しはそのたびに新しい `Future` を生成します：
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final user = AsyncZone.of(context).use((() async {
+    return await fetchUser();
+  })());
+  return Text(user.name);
+}
+```
+
+✅ Future を `build()` の外で 1 度だけ作って使い回す：
+
+```dart
+late final Future<User> _userFuture = (() async {
+  return await fetchUser();
+})();
+
+@override
+Widget build(BuildContext context) {
+  final user = AsyncZone.of(context).use(_userFuture);
+  return Text(user.name);
+}
+```
+
+**判断基準:** `use()` に渡している **その `Future` インスタンス** を保持している `late final` フィールド・`State` フィールド・hook ref（`useMemoized` / `useState`）・外部ストアが指し示せないなら、キャッシュはミスします。迷ったら、まず Future を名前付き変数に入れてから `use()` に渡してください。
+
 #### 上級 - 直接 throw
 
 future を直接 throw することもできますが、無限リビルドループを避けるために慎重な管理が必要です。future は同じインスタンスを維持するためにフィールドに保存する必要があります：
