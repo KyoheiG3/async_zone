@@ -311,6 +311,50 @@ AsyncZone(
 - `true` (default): Child widgets continue building even with pending operations
 - `false`: All child builds blocked while any operation is pending
 
+### Freeze: Keep Previous UI During Reload (Optional)
+
+`use()` accepts an optional `freeze` flag. When `true`, the surrounding `AsyncZone` keeps the previously rendered subtree on screen while the new future is pending, instead of swapping to the fallback. This gives a "transition-style" reload (no fallback flash on rapid swaps).
+
+> **Note:** This is provided for completeness as a Suspense-style primitive, and **not generally recommended for production**. In real apps, caching libraries such as [Riverpod](https://pub.dev/packages/riverpod) or [fquery](https://pub.dev/packages/fquery) usually offer a more flexible solution (stale-while-revalidate, explicit `isFetching` flags, etc.). Reach for `freeze` only if you intentionally want to stay inside the Suspense pattern.
+
+#### Basic usage
+
+```dart
+final data = AsyncZone.of(context).use(future, freeze: true);
+```
+
+#### Initial-mount caveat
+
+Passing `freeze: true` on the **very first** render means there is no previous subtree to keep, so the suspending widget renders `Empty()` and no fallback appears. You almost always want `freeze: false` for the first render and `true` for subsequent reloads.
+
+If you do want to use this feature, a small helper hook captures the idiom:
+
+```dart
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+T Function<T>(Future<T>) useFreezing() {
+  final built = useRef(false);
+  final zone = AsyncZone.of(useContext());
+  return <T>(future) {
+    final value = zone.use(future, freeze: built.value);
+    built.value = true;
+    return value;
+  };
+}
+
+// Usage inside a HookZoneWidget / HookErrorZoneWidget:
+final use = useFreezing();
+final user = use(userFuture);
+final post = use(postFuture); // works for any T
+```
+
+The `built` ref starts `false`, so the first `use()` call falls through to the normal fallback path. After that call returns successfully, `built` flips to `true` and every subsequent call freezes the previous UI instead of showing the fallback.
+
+#### Caveats
+
+- **No `isPending` indicator.** The freeze state is only confirmed *after* the future is thrown, so any widget upstream that would react to it has already built with the old value. Cross-fade or opacity dimming during freeze has to be driven by your own state (e.g. a `ChangeNotifier`).
+- **Top-down updates are blocked while frozen.** Keeping the old subtree on screen requires that no new widget configuration descends through the `AsyncZone`. `Listenable`-driven rebuilds inside the subtree still fire, but a suspending widget cannot update its display until the future resolves.
+
 ### Custom Error Zones
 
 #### Method 1: Extending ErrorZoneWidget
@@ -417,7 +461,7 @@ Check out the [example](example/) directory for complete examples including:
 
 **Methods:**
 
-- `AsyncZone.of(context)` - Returns `AsyncZoneScope` for consuming futures
+- `AsyncZone.of(context)` - Returns `AsyncZoneScope` for consuming futures via `use()`. The `use()` method accepts an optional `freeze: true` flag — see [Freeze](#freeze-keep-previous-ui-during-reload-optional).
 
 ### ErrorZoneWidget / StatefulErrorZoneWidget
 

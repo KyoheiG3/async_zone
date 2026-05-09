@@ -311,6 +311,50 @@ AsyncZone(
 - `true`（デフォルト）: 保留中の処理があっても子ウィジェットのビルドを続行
 - `false`: いずれかの処理が保留中の場合、すべての子ビルドをブロック
 
+### Freeze: リロード中も前の UI を保つ（オプション）
+
+`use()` にはオプションの `freeze` フラグがあります。`true` を渡すと、新しい future が pending の間、`AsyncZone` は **fallback に切り替えるかわりに直前の subtree を画面に残し続けます**。素早く再読み込みする UX で fallback がチラつくのを避けるための「transition 風」の挙動です。
+
+> **Note:** この機能は Suspense 流のプリミティブとして用意してあるだけで、**通常のプロダクト用途には推奨しません**。実アプリでは [Riverpod](https://pub.dev/packages/riverpod) や [fquery](https://pub.dev/packages/fquery) のようなキャッシュライブラリの方が柔軟（stale-while-revalidate、明示的な `isFetching` フラグなど）です。Suspense の枠内に意図的に留まりたい場合のみ使ってください。
+
+#### 基本的な使い方
+
+```dart
+final data = AsyncZone.of(context).use(future, freeze: true);
+```
+
+#### 初回マウント時の注意
+
+**初回レンダリング** で `freeze: true` を渡すと、保持すべき前 subtree がまだ存在しないので、suspend 中の widget は `Empty()` を返すだけで fallback も表示されません。基本的には **初回 false、以降 true** に切り替える運用になります。
+
+それでもこの機能を使いたい場合、以下のようなヘルパーフックでパターンを切り出せます：
+
+```dart
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+T Function<T>(Future<T>) useFreezing() {
+  final built = useRef(false);
+  final zone = AsyncZone.of(useContext());
+  return <T>(future) {
+    final value = zone.use(future, freeze: built.value);
+    built.value = true;
+    return value;
+  };
+}
+
+// HookZoneWidget / HookErrorZoneWidget の中で:
+final use = useFreezing();
+final user = use(userFuture);
+final post = use(postFuture); // 任意の T で使える
+```
+
+`built` は `false` で始まるので、最初の `use()` は通常の fallback 経路を通ります。その呼び出しが正常に値を返した時点で `built` が `true` になり、以降は前 UI を保持しながら新しい future の解決を待つ動作になります。
+
+#### 注意点
+
+- **`isPending` 相当の表示はできません。** freeze 状態が確定するのは Future が throw された **後** で、それを読みたい上流 widget はすでに古い値で build を済ませてしまっています。フェードや opacity を変えるような UX は別途自前の state（`ChangeNotifier` など）で駆動する必要があります。
+- **freeze 中は AsyncZone 配下への top-down 伝播が止まります。** 前 subtree を画面に残す代償として、新しい widget config が降りてこない設計です。subtree 内の `Listenable` 由来の再 build は引き続き動きますが、suspend している widget 自身は future が解決するまで表示を更新できません。
+
 ### カスタムエラーゾーン
 
 #### Method 1: ErrorZoneWidget を継承
@@ -417,7 +461,7 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 
 **メソッド:**
 
-- `AsyncZone.of(context)` - future を消費するための `AsyncZoneScope` を返す
+- `AsyncZone.of(context)` - `use()` 経由で future を消費するための `AsyncZoneScope` を返します。`use()` はオプションの `freeze: true` フラグを受け付けます — [Freeze](#freeze-リロード中も前の-ui-を保つオプション) を参照。
 
 ### ErrorZoneWidget / StatefulErrorZoneWidget
 

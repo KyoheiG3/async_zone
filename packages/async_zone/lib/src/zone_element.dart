@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'async/frozen_future.dart';
 import 'async/zone_provider.dart';
 import 'async/zone_scope.dart';
 import 'error/zone_provider.dart';
@@ -37,8 +38,8 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     final asyncZone = AsyncZoneProvider.maybeOf(this);
     final errorZone = ErrorZoneProvider.maybeOf(this);
 
-    void handleFuture(Future future) {
-      asyncZone?.showFallback(future);
+    void handleFuture(Future future, {bool freeze = false}) {
+      asyncZone?.showFallback(future, freeze: freeze);
 
       void completeHandler() {
         _tasks.remove(future);
@@ -60,6 +61,8 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
 
     try {
       return (asyncZone?.canBuildChild() ?? true) ? super.build() : Empty();
+    } on FrozenFuture catch (frozen) {
+      handleFuture(frozen.inner, freeze: true);
     } on Future catch (future) {
       handleFuture(future);
     } catch (error, stackTrace) {

@@ -33,6 +33,7 @@ AsyncZone is a Flutter library that provides React Suspense-like async handling 
 ```
 lib/src/
 ├── async/                   # AsyncZone (Suspense) implementation
+│   ├── frozen_future.dart   # Future wrapper that signals freeze opt-in
 │   ├── zone.dart            # Public API
 │   ├── zone_provider.dart   # InheritedWidget & Element
 │   └── zone_scope.dart      # Interface definitions
@@ -107,6 +108,24 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 **Controller Pattern**: Widget holds controller (ephemeral), Element attaches to it (persistent).
 
 > **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://pub.dev/packages/error_boundary) package.
+
+### 4. Freeze Mechanism (transition-style swap)
+
+`AsyncZoneScope.use()` accepts an opt-in `freeze: true` flag. With it set, the AsyncZone keeps the previously rendered subtree on screen while the new future is pending, instead of swapping in the fallback. It is the closest Flutter equivalent to React 19's `useTransition` fallback suppression.
+
+**Why a faithful port isn't possible.** React's transition behavior relies on its **render / commit separation** — a low-priority render can keep building the new tree in the background while the previously committed UI stays on screen, and React only commits the new tree once the suspension resolves. Flutter's build phase is synchronous and tightly coupled to commit; there is no notion of "build invisibly in the background". The simplification used here is therefore: **don't try to build a new subtree at all while frozen — just block the swap.**
+
+**Implementation.**
+
+- `FrozenFuture<T>` (in `async/frozen_future.dart`) wraps a `Future<T>` and is thrown by `use()` when `freeze: true`. It implements `Future<T>` so existing `on Future catch` handlers still pick it up; `ZoneElement` distinguishes it via a more specific `on FrozenFuture catch` clause and propagates the flag down to `AsyncZoneProviderScope.showFallback(future, freeze: true)`.
+- `AsyncZoneProviderElement._tasks` is a `Map<Future, bool>` tracking the freeze flag per pending future.
+- `AsyncZoneProviderElement.updateChild` returns the existing child element (skipping `super.updateChild`) whenever any task has `freeze == true`. That short-circuit is what keeps the old UI on screen.
+
+**Limitations.**
+
+- `isPending` cannot be reflected within the same frame as the trigger. The freeze flag is set during the very build that throws the future, so any widget upstream that would react to it has already built using the old value. (React's `useTransition` avoids this by committing `isPending = true` on a higher-priority lane *before* the transition begins.)
+- Top-down propagation is blocked while frozen. Keeping the old subtree visible requires that no new widget configuration descends through the `AsyncZone`. `Listenable`-driven rebuilds inside the subtree still fire, but a suspending widget cannot update its display until the future resolves.
+- Caching layers usually solve the same UX better. Libraries such as Riverpod or fquery expose previous data and `isFetching` flags directly, with no need for build-time freezing. The freeze flag is mainly useful for Suspense-pure architectures or simple cases — see the README for an example pattern (`useFreezing`).
 
 ## API Design
 

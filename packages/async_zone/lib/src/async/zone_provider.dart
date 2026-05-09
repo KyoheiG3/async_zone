@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'frozen_future.dart';
 import 'zone_scope.dart';
 
 /// An [InheritedWidget] that provides async zone functionality to descendant widgets.
@@ -57,7 +58,7 @@ class AsyncZoneProviderElement extends InheritedElement
 
   final _cache = Expando<({Object? value})>('AsyncZone cache');
   final _errors = Expando<Object>('AsyncZone errors');
-  final _tasks = <Future<dynamic>>{};
+  final _tasks = <Future<dynamic>, bool>{};
 
   var _isDuringPerformRebuild = false;
 
@@ -81,6 +82,14 @@ class AsyncZoneProviderElement extends InheritedElement
   }
 
   @override
+  Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
+    final hasFrozen = _tasks.values.any((freeze) => freeze);
+    return hasFrozen && child != null
+        ? child
+        : super.updateChild(child, newWidget, newSlot);
+  }
+
+  @override
   Widget build() {
     return _tasks.isNotEmpty ? _widget.fallback : super.build();
   }
@@ -89,7 +98,7 @@ class AsyncZoneProviderElement extends InheritedElement
   bool canBuildChild() => _widget.allowParallelBuilds || _tasks.isEmpty;
 
   @override
-  void showFallback(Future<dynamic> future) {
+  void showFallback(Future<dynamic> future, {bool freeze = false}) {
     final cachedError = _errors[future];
     if (cachedError != null) {
       throw cachedError;
@@ -99,7 +108,7 @@ class AsyncZoneProviderElement extends InheritedElement
       WidgetsBinding.instance.addPostFrameCallback((_) => markNeedsBuild());
     }
 
-    _tasks.add(future);
+    _tasks[future] = freeze;
     future
         .onError((error, _) {
           _errors[future] = error;
@@ -123,7 +132,7 @@ class AsyncZoneProviderElement extends InheritedElement
   /// with the same future instance will return the cached value without
   /// triggering async handling again.
   @override
-  T use<T>(Future<T> future) {
+  T use<T>(Future<T> future, {bool freeze = false}) {
     final cached = _cache[future];
     if (cached != null) {
       return cached.value as T;
@@ -137,7 +146,7 @@ class AsyncZoneProviderElement extends InheritedElement
           // Do nothing
         });
 
-    throw future;
+    throw freeze ? FrozenFuture(future) : future;
   }
 
   @override

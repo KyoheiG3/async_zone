@@ -33,6 +33,7 @@ AsyncZone は、React の Suspense ライクな非同期処理と Error Boundary
 ```
 lib/src/
 ├── async/                   # AsyncZone (Suspense) 実装
+│   ├── frozen_future.dart   # freeze オプトイン用の Future ラッパ
 │   ├── zone.dart            # 公開API
 │   ├── zone_provider.dart   # InheritedWidget & Element
 │   └── zone_scope.dart      # インターフェース定義
@@ -107,6 +108,24 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 **コントローラーパターン**: Widget がコントローラー保持（一時的）、Element がアタッチ（永続的）。
 
 > **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [error_boundary](https://pub.dev/packages/error_boundary) をご確認ください。
+
+### 4. Freeze 機構（transition 風の差し替え）
+
+`AsyncZoneScope.use()` はオプションで `freeze: true` フラグを受け付けます。これを指定すると、新しい future が pending の間 `AsyncZone` は **fallback に切り替えるかわりに直前の subtree を画面に残し続けます**。React 19 の `useTransition` の fallback 抑制に最も近い挙動です。
+
+**素直な移植が成立しない理由。** React の transition は **render フェーズと commit フェーズの分離** が前提です。低優先度の render が「裏で」新しいツリーを構築し続け、コミット済みの旧 UI は画面に残り続け、suspend が解決した瞬間にアトミックに差し替わる、という仕組みです。Flutter の build は同期で commit と一体なので、「画面に出さずに裏で build する」概念がそもそも存在しません。そこで採っている割り切りは：**freeze 中は新しい subtree を build しようとせず、差し替え自体を止める** というものです。
+
+**実装。**
+
+- `FrozenFuture<T>`（`async/frozen_future.dart`）は `Future<T>` をラップする型で、`use()` が `freeze: true` で呼ばれたときに throw します。`Future<T>` を実装しているので既存の `on Future catch` でも拾えますが、`ZoneElement` はより具体的な `on FrozenFuture catch` で受け止めて、`AsyncZoneProviderScope.showFallback(future, freeze: true)` にフラグを伝搬します。
+- `AsyncZoneProviderElement._tasks` は `Map<Future, bool>` で、各 pending future に対する freeze フラグを保持します。
+- `AsyncZoneProviderElement.updateChild` は `_tasks` のいずれかが `freeze == true` のとき、`super.updateChild` を呼ばずに既存の子 element をそのまま返します。この short-circuit が「旧 UI を画面に残す」実体です。
+
+**限界。**
+
+- `isPending` 相当をトリガーと同じフレームに反映できません。freeze フラグは future を throw する build の最中に確定するので、それを読みたい上流 widget はすでに古い値で build を済ませています。（React の `useTransition` は `isPending = true` を高優先度レーンで先に commit するのでこの順序逆転が起きません。）
+- freeze 中は AsyncZone 配下への top-down 伝播が止まります。旧 subtree を画面に残すには、`AsyncZone` 経由で新しい widget config を降ろさない設計が必要だからです。subtree 内の `Listenable` 由来の再 build は引き続き動きますが、suspend している widget 自身は future が解決するまで表示を更新できません。
+- 実用的には、キャッシュ層の方が同じ UX をもっと柔軟に提供できます。Riverpod や fquery のようなライブラリは前回データと `isFetching` フラグを直接公開するので、build 時の freeze は不要です。freeze フラグの主な利用シーンは Suspense pure な構成や単純なケースです。利用パターンは README の `useFreezing` 例を参照してください。
 
 ## API 設計
 

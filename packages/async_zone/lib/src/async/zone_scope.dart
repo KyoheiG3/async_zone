@@ -13,7 +13,14 @@ abstract class AsyncZoneScope {
   ///
   /// If the future has already completed, returns the cached result.
   /// Otherwise, throws the future to trigger the async zone's fallback UI.
-  T use<T>(Future<T> future);
+  ///
+  /// When [freeze] is `true`, the previously rendered subtree below the
+  /// enclosing [AsyncZone] is **kept on screen** while the future is pending,
+  /// instead of being swapped out for the fallback. Use this for transition-
+  /// style updates where flashing a loading indicator would be jarring.
+  /// While frozen, no further widget updates propagate down through the zone
+  /// until the future completes.
+  T use<T>(Future<T> future, {bool freeze = false});
 }
 
 /// Internal scope interface for async zone provider functionality.
@@ -24,7 +31,9 @@ abstract class AsyncZoneProviderScope {
   /// Shows the fallback UI for the given future.
   ///
   /// This method is called when a future is thrown during the build phase.
-  void showFallback(Future future);
+  /// When [freeze] is `true`, the existing subtree is retained instead of
+  /// being replaced with the fallback widget.
+  void showFallback(Future future, {bool freeze = false});
 
   /// Returns whether child widgets are allowed to build.
   ///
@@ -43,3 +52,4 @@ abstract class AsyncZoneProviderScope {
 /// Not exported from the package — this is an internal contract between
 /// `AsyncZone` and the `ZoneElement` mixin.
 abstract interface class AsyncZoneCaller {}
+
