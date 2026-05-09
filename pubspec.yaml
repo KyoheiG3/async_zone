@@ -9,3 +9,4 @@ workspace:
   - packages/async_zone
   - packages/error_boundary
   - packages/hooks_async_zone
+  - example
