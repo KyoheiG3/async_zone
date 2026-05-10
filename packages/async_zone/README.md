@@ -369,20 +369,28 @@ class _MyWidgetState extends State<MyWidget> {
 
 ## Advanced Usage
 
-### Parallel vs Sequential Builds
+### Concurrent vs Sequential Builds
 
-Control whether child widgets can build while async operations are pending:
+Control whether sibling `ZoneWidget`s in this zone may build concurrently
+while another future is pending:
 
 ```dart
 AsyncZone(
-  allowParallelBuilds: false, // Default is true
+  allowConcurrentBuilds: false, // Default is true
   fallback: CircularProgressIndicator(),
   child: MyWidget(),
 )
 ```
 
-- `true` (default): Child widgets continue building even with pending operations
-- `false`: All child builds blocked while any operation is pending
+- `true` (default): each `ZoneWidget` evaluates independently and may suspend
+  on its own future. All thrown futures are awaited concurrently and the
+  fallback is shown until every one of them resolves.
+- `false`: only one `ZoneWidget` is allowed to suspend at a time. As soon as
+  one future is thrown, sibling `ZoneWidget`s render an empty placeholder
+  for the rest of that build pass — their futures are not started until the
+  in-flight one completes (sequential loading). Plain `StatelessWidget` /
+  `StatefulWidget` descendants are unaffected; this flag only gates
+  `ZoneElement`-mixed elements.
 
 ### Freeze: Keep Previous UI During Reload (Optional)
 
@@ -530,7 +538,7 @@ Check out the [example](example/) directory for complete examples including:
 | --------------------- | -------- | ---------------------------------------------------- |
 | `fallback`            | `Widget` | Widget to display while async operations are pending |
 | `child`               | `Widget` | Main content widget                                  |
-| `allowParallelBuilds` | `bool`   | Whether to allow parallel builds (default: `true`)   |
+| `allowConcurrentBuilds` | `bool` | Whether sibling `ZoneWidget`s may suspend concurrently (default: `true`) |
 
 **Methods:**
 

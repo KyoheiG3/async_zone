@@ -133,7 +133,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 ```dart
 AsyncZone(
-  allowParallelBuilds: true,
+  allowConcurrentBuilds: true,
   fallback: LoadingWidget(),
   child: MyWidget(),
 )
@@ -216,7 +216,7 @@ class MyErrorWidget extends ErrorZoneWidget<MyState> {
 
 - **子の更新スキップ**: ローディング中の ErrorWidget フラッシュを防止（FAQ Q1 参照）
 - **ダブルリビルド**: 即座の状態反映（FAQ Q6 参照）
-- **並列ビルド**: `allowParallelBuilds`で制御
+- **並行ビルド**: `allowConcurrentBuilds`で制御
 
 ### ビルド最適化
 

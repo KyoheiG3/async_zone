@@ -334,7 +334,7 @@ void main() {
     });
 
     group('given a pending Future with sibling ZoneWidget', () {
-      group('when allowParallelBuilds is false', () {
+      group('when allowConcurrentBuilds is false', () {
         testWidgets('should return Empty instead of building sibling',
             (tester) async {
           // Given
@@ -347,7 +347,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               home: AsyncZone(
-                allowParallelBuilds: false,
+                allowConcurrentBuilds: false,
                 fallback: const Text('Loading...'),
                 child: SiblingFutureWidget(
                   firstChild: TestWidget(future: future),
@@ -376,7 +376,7 @@ void main() {
         });
       });
 
-      group('when allowParallelBuilds is true (default)', () {
+      group('when allowConcurrentBuilds is true (default)', () {
         testWidgets('should build sibling while Future is pending',
             (tester) async {
           // Given
@@ -389,7 +389,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               home: AsyncZone(
-                allowParallelBuilds: true, // default
+                allowConcurrentBuilds: true, // default
                 fallback: const Text('Loading...'),
                 child: SiblingFutureWidget(
                   firstChild: TestWidget(future: future),
@@ -402,7 +402,7 @@ void main() {
           );
 
           // Then - fallback is shown but sibling's build WAS called
-          // because allowParallelBuilds is true (canBuildChild returns true)
+          // because allowConcurrentBuilds is true (canBuildChild returns true)
           expect(find.text('Loading...'), findsOneWidget);
           expect(siblingBuildCount, 1);
 

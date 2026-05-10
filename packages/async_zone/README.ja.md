@@ -369,20 +369,27 @@ class _MyWidgetState extends State<MyWidget> {
 
 ## 高度な使用方法
 
-### 並列ビルド vs シーケンシャルビルド
+### 並行ビルド vs シーケンシャルビルド
 
-非同期処理が保留中の間、子ウィジェットがビルドできるかどうかを制御：
+このゾーン配下の兄弟 `ZoneWidget` が、他の future の保留中に並行してビルド
+できるかどうかを制御します：
 
 ```dart
 AsyncZone(
-  allowParallelBuilds: false, // デフォルトは true
+  allowConcurrentBuilds: false, // デフォルトは true
   fallback: CircularProgressIndicator(),
   child: MyWidget(),
 )
 ```
 
-- `true`（デフォルト）: 保留中の処理があっても子ウィジェットのビルドを続行
-- `false`: いずれかの処理が保留中の場合、すべての子ビルドをブロック
+- `true`（デフォルト）: 各 `ZoneWidget` が独立して評価され、それぞれ自分の
+  future で suspend できます。throw された future はすべて並行に await され、
+  すべて解決するまで fallback が表示されます。
+- `false`: 同時に suspend できる `ZoneWidget` は 1 つだけです。最初の future
+  が throw された時点で、そのビルドパスの間は他の `ZoneWidget` は空の
+  プレースホルダになり、進行中の future が完了するまで自分の future は
+  発火しません（シーケンシャルロード）。`ZoneElement` を mixin していない
+  通常の `StatelessWidget` / `StatefulWidget` には影響しません。
 
 ### Freeze: リロード中も前の UI を保つ（オプション）
 
@@ -530,7 +537,7 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 | --------------------- | -------- | -------------------------------------------------- |
 | `fallback`            | `Widget` | 非同期処理が保留中の間に表示するウィジェット       |
 | `child`               | `Widget` | メインコンテンツウィジェット                       |
-| `allowParallelBuilds` | `bool`   | 並列ビルドを許可するかどうか（デフォルト: `true`） |
+| `allowConcurrentBuilds` | `bool` | 兄弟 `ZoneWidget` が並行に suspend できるか（デフォルト: `true`） |
 
 **メソッド:**
 

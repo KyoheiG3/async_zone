@@ -21,8 +21,9 @@ import 'zone_scope.dart';
 /// async operations. When a future is thrown, the zone catches it and shows
 /// the fallback UI until it completes.
 ///
-/// The [allowParallelBuilds] parameter controls whether child widgets can
-/// build while async operations are pending from other parts of the tree.
+/// The [allowConcurrentBuilds] parameter controls whether sibling
+/// [ZoneWidget]s can keep building (and kick off their own futures)
+/// concurrently while another async operation is still pending.
 ///
 /// See also:
 /// - [AsyncZoneScope], which provides the [use] method for consuming futures.
@@ -31,21 +32,29 @@ class AsyncZone extends StatelessWidget {
   /// Creates an [AsyncZone] widget.
   ///
   /// The [fallback] and [child] parameters are required.
-  /// The [allowParallelBuilds] parameter defaults to `true`.
+  /// The [allowConcurrentBuilds] parameter defaults to `true`.
   const AsyncZone({
     super.key,
-    this.allowParallelBuilds = true,
+    this.allowConcurrentBuilds = true,
     required this.fallback,
     required this.child,
   });
 
-  /// Whether to allow child widgets to build while async operations are pending.
+  /// Whether suspending [ZoneWidget]s in this zone may build concurrently.
   ///
-  /// When `true` (default), child widgets can continue building even if there
-  /// are pending async operations from other parts of the tree.
+  /// When `true` (default), each [ZoneWidget] under this zone evaluates
+  /// independently: if widget A is suspended on a future, widget B can still
+  /// build, call [AsyncZoneScope.use], and suspend on its own future. The
+  /// futures effectively run concurrently and the fallback is shown until
+  /// every pending future resolves.
   ///
-  /// When `false`, all child builds are blocked while any async operation is pending.
-  final bool allowParallelBuilds;
+  /// When `false`, only one [ZoneWidget] is allowed to suspend at a time. As
+  /// soon as the first future is thrown, every other [ZoneWidget] in the zone
+  /// renders an empty placeholder for the rest of that build pass — their
+  /// futures are not started until the in-flight one completes. Note that
+  /// non-zone widgets (plain [StatelessWidget]/[StatefulWidget]) are never
+  /// affected; this flag only gates [ZoneElement]-mixed elements.
+  final bool allowConcurrentBuilds;
 
   /// The widget to display while async operations are pending.
   ///
@@ -58,7 +67,7 @@ class AsyncZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AsyncZoneProvider(
-      allowParallelBuilds: allowParallelBuilds,
+      allowConcurrentBuilds: allowConcurrentBuilds,
       fallback: fallback,
       child: child,
     );

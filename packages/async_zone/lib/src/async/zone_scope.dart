@@ -37,7 +37,7 @@ abstract class AsyncZoneProviderScope {
 
   /// Returns whether child widgets are allowed to build.
   ///
-  /// Returns `false` if parallel builds are disabled and there are pending tasks.
+  /// Returns `false` if concurrent builds are disabled and there are pending tasks.
   bool canBuildChild();
 }
 
