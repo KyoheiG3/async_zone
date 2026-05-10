@@ -61,60 +61,27 @@ ErrorBoundary(
 
 ## Core Concepts
 
-### ZoneWidget and ZoneElement - Important Requirements
-
-**⚠️ Critical:** Your widget must use `ZoneElement` to handle errors thrown in `build()`.
-
-**Requirements:**
-
-- Extend `ZoneWidget` or `StatefulZoneWidget`
-- Throw errors inside `build()` method only
-- Regular `StatelessWidget`/`StatefulWidget` won't work
-
-**Correct:**
-
-```dart
-class MyWidget extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    throw Exception('Error');  // ✅ Throws error in build()
-  }
-}
-```
-
-**Incorrect:**
-
-```dart
-class MyWidget extends StatelessWidget {  // ❌ Not a ZoneWidget
-  @override
-  Widget build(BuildContext context) {
-    throw Exception('Error');  // ❌ Won't be caught
-  }
-}
-
-class MyButton extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => throw Exception('Error'),  // ❌ Outside build()
-      child: Text('Click'),
-    );
-  }
-}
-```
-
 ### ErrorBoundary
 
-`ErrorBoundary` catches errors from child widgets and displays fallback UI instead of crashing. This is inspired by React's Error Boundary.
+`ErrorBoundary` catches errors from child widgets and displays fallback UI
+instead of crashing, mirroring React's Error Boundary.
 
-**Important:** Only errors thrown from the `build()` method of `ZoneWidget` or `StatefulZoneWidget` will be caught.
+**Important — automatic catching only fires for `build()` throws inside a
+widget whose `Element` mixes in `ZoneElement`** — typically `ZoneWidget`,
+`StatefulZoneWidget`, or one of `hooks_async_zone`'s base classes. Errors
+from a plain `StatelessWidget` / `StatefulWidget`, or thrown outside
+`build()` (event handlers, post-frame callbacks, `Timer` callbacks, etc.)
+are **not** caught automatically. For those, call
+`ErrorBoundary.of(context).showBoundary(error)` from any widget — manual
+triggering does not require `ZoneElement`.
 
-**Key Features:**
+**Key features:**
 
 - Declarative error handling
 - Reset capability to recover from errors
-- Error callbacks for logging/reporting
-- Programmatic error triggering via `showBoundary`
+- `onError` / `onReset` callbacks for logging and side effects
+- `resetKeys` for auto-reset on external value changes
+- Programmatic triggering via `showBoundary`
 
 ## Advanced Usage
 

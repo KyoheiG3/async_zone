@@ -61,60 +61,28 @@ ErrorBoundary(
 
 ## コアコンセプト
 
-### ZoneWidget と ZoneElement - 重要な要件
-
-**⚠️ 重要:** `build()` 内で throw されたエラーを処理するには、ウィジェットが `ZoneElement` を使用する必要があります。
-
-**要件:**
-
-- `ZoneWidget` または `StatefulZoneWidget` を継承する
-- エラーは `build()` メソッド内でのみ throw する
-- 通常の `StatelessWidget`/`StatefulWidget` では動作しません
-
-**正しい使い方:**
-
-```dart
-class MyWidget extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    throw Exception('Error');  // ✅ build() 内でエラーを throw
-  }
-}
-```
-
-**間違った使い方:**
-
-```dart
-class MyWidget extends StatelessWidget {  // ❌ ZoneWidget ではない
-  @override
-  Widget build(BuildContext context) {
-    throw Exception('Error');  // ❌ キャッチされません
-  }
-}
-
-class MyButton extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => throw Exception('Error'),  // ❌ build() の外
-      child: Text('Click'),
-    );
-  }
-}
-```
-
 ### ErrorBoundary
 
-`ErrorBoundary` は子ウィジェットからのエラーをキャッチし、クラッシュする代わりにフォールバック UI を表示します。React の Error Boundary にインスパイアされています。
+`ErrorBoundary` は子ウィジェットからのエラーをキャッチし、クラッシュする
+代わりにフォールバック UI を表示します（React の Error Boundary と同じ
+思想）。
 
-**重要:** `ZoneWidget` または `StatefulZoneWidget` の `build()` メソッドから throw されたエラーのみがキャッチされます。
+**重要 — 自動キャッチが効くのは、`Element` が `ZoneElement` を mixin した
+ウィジェット（`ZoneWidget` / `StatefulZoneWidget` / `hooks_async_zone` の
+基底クラスなど）の `build()` 内の throw だけ**。素の `StatelessWidget` /
+`StatefulWidget`、あるいは `build()` の外（イベントハンドラ・post-frame
+callback・`Timer` callback など）で投げられた例外は **自動的にはキャッチ
+されません**。これらのケースでは、任意のウィジェットから
+`ErrorBoundary.of(context).showBoundary(error)` を呼んでください — 手動
+トリガーは `ZoneElement` を必要としません。
 
 **主な機能:**
 
 - 宣言的なエラーハンドリング
 - エラーから回復するためのリセット機能
-- ログ記録/レポート用のエラーコールバック
-- `showBoundary` によるプログラマティックなエラートリガー
+- ログ・副作用用の `onError` / `onReset` コールバック
+- 外部値変化で自動リセットする `resetKeys`
+- `showBoundary` によるプログラマティックなトリガー
 
 ## 高度な使用方法
 
