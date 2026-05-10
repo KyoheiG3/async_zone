@@ -98,6 +98,24 @@ class _StatefulThrowingWidgetState extends State<StatefulThrowingWidget> {
   }
 }
 
+/// Widget that calls `use()` with the `freeze` flag exposed.
+class FreezingTestWidget extends ZoneWidget {
+  const FreezingTestWidget({
+    super.key,
+    required this.future,
+    this.freeze = false,
+  });
+
+  final Future<String> future;
+  final bool freeze;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = AsyncZone.of(context).use(future, freeze: freeze);
+    return Text(value);
+  }
+}
+
 /// Widget that directly throws Future without using AsyncZone.of()
 class DirectThrowingZoneWidget extends ZoneWidget {
   const DirectThrowingZoneWidget({super.key, required this.future});

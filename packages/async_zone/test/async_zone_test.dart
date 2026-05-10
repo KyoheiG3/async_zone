@@ -333,6 +333,93 @@ void main() {
       });
     });
 
+    group('given freeze: true', () {
+      testWidgets(
+        'on first render keeps fallback hidden and shows nothing visible',
+        (tester) async {
+          // Given - freeze on the very first render: there is no previous
+          // subtree to keep, so the suspending ZoneElement renders Empty and
+          // AsyncZoneProvider holds onto it instead of swapping to fallback.
+          final future = Future.delayed(
+            const Duration(milliseconds: 100),
+            () => 'First',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: FreezingTestWidget(future: future, freeze: true),
+              ),
+            ),
+          );
+
+          // Then - neither fallback nor child content is shown during freeze
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsNothing);
+
+          // When - the future completes
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Then - the child renders the resolved value
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'retains the previously rendered subtree while pending',
+        (tester) async {
+          // Given - first render completes and "First" is visible
+          final firstFuture = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'First',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: FreezingTestWidget(future: firstFuture),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(find.text('First'), findsOneWidget);
+
+          // When - the widget is rebuilt with a new future and freeze: true
+          final secondFuture = Future.delayed(
+            const Duration(milliseconds: 100),
+            () => 'Second',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: FreezingTestWidget(future: secondFuture, freeze: true),
+              ),
+            ),
+          );
+
+          // Then - the previous subtree is retained instead of swapping to
+          // fallback, and the new value is not yet visible
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsOneWidget);
+          expect(find.text('Second'), findsNothing);
+
+          // When - the second future completes
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Then - the new content replaces the previous subtree
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsNothing);
+          expect(find.text('Second'), findsOneWidget);
+        },
+      );
+
+    });
+
     group('given a pending Future with sibling ZoneWidget', () {
       group('when allowConcurrentBuilds is false', () {
         testWidgets('should return Empty instead of building sibling',
