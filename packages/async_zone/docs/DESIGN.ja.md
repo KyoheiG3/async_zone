@@ -127,74 +127,20 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 - freeze 中は AsyncZone 配下への top-down 伝播が止まります。旧 subtree を画面に残すには、`AsyncZone` 経由で新しい widget config を降ろさない設計が必要だからです。subtree 内の `Listenable` 由来の再 build は引き続き動きますが、suspend している widget 自身は future が解決するまで表示を更新できません。
 - 実用的には、キャッシュ層の方が同じ UX をもっと柔軟に提供できます。Riverpod や fquery のようなライブラリは前回データと `isFetching` フラグを直接公開するので、build 時の freeze は不要です。freeze フラグの主な利用シーンは Suspense pure な構成や単純なケースです。利用パターンは README の `useFreezing` 例を参照してください。
 
-## API 設計
+## 公開 API 一覧
 
-### AsyncZone
+| 型                      | 役割                                                                  |
+| ----------------------- | --------------------------------------------------------------------- |
+| `AsyncZone`             | 境界ウィジェット。子孫が suspend している間 `fallback` を描画。       |
+| `AsyncZoneScope`        | `AsyncZone.of(context)` の戻り値。`use<T>(future)` を提供。           |
+| `ZoneWidget`            | `Element` が `ZoneElement` を mixin した `StatelessWidget`。          |
+| `StatefulZoneWidget`    | 上記の `StatefulWidget` 版。                                          |
+| `ZoneBuilder`           | サブクラス化せずに `ZoneWidget` をインライン記述する便利ウィジェット。 |
+| `ErrorZoneWidget<T>`    | `getDerivedStateFromError` / `componentDidCatch` を持つカスタム境界。 |
+| `ErrorBoundaryMixin<T>` | 同じライフサイクルを mixin として提供（独自階層用）。                  |
 
-```dart
-AsyncZone(
-  allowConcurrentBuilds: true,
-  fallback: LoadingWidget(),
-  child: MyWidget(),
-)
-
-// 子孫からのアクセス
-final zone = AsyncZone.of(context);
-final data = zone.use(fetchData());
-```
-
-### ErrorZoneWidget
-
-```dart
-class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
-  const MyErrorZone({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  void componentDidCatch(Object error, StackTrace stackTrace) {
-    log(error);
-  }
-
-  @override
-  ({Object? error}) getDerivedStateFromError(Object? error) {
-    return (error: error);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.error != null) {
-      return ErrorView(
-        error: state.error,
-        onRetry: resetErrorBoundary,
-      );
-    }
-    return child;
-  }
-}
-```
-
-### ZoneWidget
-
-```dart
-class MyWidget extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    throw fetchData();  // 完了までサスペンド
-  }
-}
-
-// カスタムエラーハンドリング付き
-class MyErrorWidget extends ErrorZoneWidget<MyState> {
-  @override
-  MyState getDerivedStateFromError(Object? error) => MyState(error: error);
-
-  @override
-  Widget build(BuildContext context) {
-    return state.error != null ? ErrorView() : NormalView();
-  }
-}
-```
+シグネチャやユーザ向けサンプルは README を参照してください。本ドキュメントは
+API リファレンスではなく、設計の説明書です。
 
 ## エラーハンドリング戦略
 
