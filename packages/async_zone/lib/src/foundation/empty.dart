@@ -5,8 +5,10 @@ import 'package:flutter/widgets.dart';
 /// [Empty] is used as a placeholder widget when no content should be displayed.
 /// It creates a render object with zero size and no visual representation.
 ///
-/// This is commonly used in async zones or error boundaries when waiting for
-/// content to load or when displaying fallback UI.
+/// Used internally by [ZoneElement] and [ErrorZoneElement] to occupy a build
+/// slot when the actual subtree is being suspended or escalated to an outer
+/// zone. The user-visible fallback UI is rendered by [AsyncZone.fallback], not
+/// by this widget.
 class Empty extends SingleChildRenderObjectWidget {
   /// Creates an [Empty] widget.
   const Empty({super.key});
