@@ -1,5 +1,5 @@
-name: example
-description: "A new Flutter project."
+name: async_zone_sample
+description: "Sample app demonstrating async_zone, hooks_async_zone, and error_boundary."
 version: 1.0.0
 publish_to: none
 

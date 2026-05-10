@@ -1,11 +1,11 @@
 {
-    "name": "example",
-    "short_name": "example",
+    "name": "async_zone_sample",
+    "short_name": "async_zone_sample",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Sample app demonstrating async_zone, hooks_async_zone, and error_boundary.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

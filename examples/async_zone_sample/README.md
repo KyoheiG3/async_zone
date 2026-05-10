@@ -1,16 +1,18 @@
-# example
+# async_zone_sample
 
-A new Flutter project.
+A Flutter sample app that demonstrates `async_zone`, `hooks_async_zone`, and `error_boundary` working together with a Suspense-style `use()` pattern.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+From the repository root:
 
-A few resources to get you started if this is your first Flutter project:
+```sh
+flutter pub get
+flutter run -d <device> --target examples/async_zone_sample/lib/main.dart
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Or from this directory:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+flutter run
+```
