@@ -88,9 +88,10 @@ class ErrorBoundary extends ErrorZoneWidget<ErrorBoundaryState> {
   /// Keys that, when changed, will reset the error boundary automatically.
   ///
   /// When any value in this list changes (compared by equality) between
-  /// rebuilds, the error state is cleared without invoking [onReset]. This
-  /// is useful for resetting the boundary when an external value (e.g. a
-  /// route argument or query key) changes and the previous error no longer
+  /// rebuilds, the error state is cleared and [onReset] is invoked with a
+  /// `null` argument, mirroring React's `react-error-boundary` semantics.
+  /// This is useful for resetting the boundary when an external value (e.g.
+  /// a route argument or query key) changes and the previous error no longer
   /// applies.
   ///
   /// Pass `null` (the default) to disable this behavior.
