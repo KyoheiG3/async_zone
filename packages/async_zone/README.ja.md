@@ -35,21 +35,38 @@ flutter pub get
 
 ### AsyncZone - 非同期処理の扱い（React Suspense にインスパイア）
 
-ウィジェットツリーを `AsyncZone` でラップし、future を throw することで自動的にフォールバック UI を表示します：
+ウィジェットツリーを `AsyncZone` でラップし、配下の `ZoneWidget` の中で
+`use()` を呼ぶだけです。future が pending の間、ゾーンは `child` の代わりに
+`fallback` を描画します。
+
+#### `ZoneBuilder` でインライン記述（クラス定義不要）
+
+1 回限りの利用なら、future を安定した場所に保持して `ZoneBuilder` の中で
+消費するのが最も手軽です：
 
 ```dart
 import 'package:async_zone/async_zone.dart';
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AsyncZone(
-      fallback: CircularProgressIndicator(),
-      child: MyDataWidget(),
-    );
-  }
-}
+final greeting = Future.delayed(const Duration(seconds: 2), () => 'Hello!');
 
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: ZoneBuilder(
+    builder: (context) {
+      final text = AsyncZone.of(context).use(greeting);
+      return Text(text);
+    },
+  ),
+)
+```
+
+#### 再利用可能なウィジェットには `StatefulZoneWidget`
+
+future を自身で保持する再利用可能なウィジェットを作るときは
+`StatefulZoneWidget` を継承し、`late final` フィールドに格納してリビルド間で
+同じ `Future` インスタンスを使い回します：
+
+```dart
 class MyDataWidget extends StatefulZoneWidget {
   const MyDataWidget({super.key});
 
@@ -58,17 +75,15 @@ class MyDataWidget extends StatefulZoneWidget {
 }
 
 class _MyDataWidgetState extends State<MyDataWidget> {
-  // future をフィールドに保持して、リビルド間で同じインスタンスを再利用する
   late final Future<String> _future = _fetchData();
 
   Future<String> _fetchData() async {
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
     return 'Hello, AsyncZone!';
   }
 
   @override
   Widget build(BuildContext context) {
-    // use() を使ってキャッシング
     final data = AsyncZone.of(context).use(_future);
     return Text(data);
   }
@@ -122,106 +137,35 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 ### ZoneWidget と ZoneElement - 重要な要件
 
-**⚠️ 重要:** `build()` 内で throw された future とエラーを処理するには、ウィジェットが `ZoneElement` を使用する必要があります。
-
-**要件:**
-
-- `ZoneWidget` または `StatefulZoneWidget` を継承する
-- future/エラーは `build()` メソッド内でのみ throw する
-- 通常の `StatelessWidget`/`StatefulWidget` では動作しません
-
-**正しい使い方:**
+**⚠️ 重要:** suspend / エラー捕捉が機能するのは、`Element` が
+`ZoneElement` を mixin したウィジェットの `build()` 内のみです。公開されている
+基底クラス（`ZoneWidget` / `StatefulZoneWidget` / `ZoneBuilder`）を使えば
+自動的にこの条件を満たします。引っかかりやすい2つの罠：
 
 ```dart
-class MyWidget extends StatefulZoneWidget {
-  const MyWidget({super.key});
-
+// ❌ 素の StatelessWidget — Element が ZoneElement を mixin していないので、
+//    throw された Future はそのままビルドエラーとして漏れ出します。
+class Wrong extends StatelessWidget {
   @override
-  State<MyWidget> createState() => _MyWidgetState();
+  Widget build(BuildContext context) => throw fetchData();
 }
 
-class _MyWidgetState extends State<MyWidget> {
-  late final _future = fetchData();
-
+// ❌ build() の外（イベントハンドラ等）での throw は捕捉されません。
+//    ゾーンが観測するのは build フェーズの throw だけです。
+class WrongHandler extends ZoneWidget {
   @override
-  Widget build(BuildContext context) {
-    throw _future;  // ✅ build() 内で future を throw
-    // または: final data = AsyncZone.of(context).use(_future);
-  }
+  Widget build(BuildContext context) => ElevatedButton(
+        onPressed: () => throw Exception('not caught'),
+        child: const Text('Click'),
+      );
 }
 ```
 
-**間違った使い方:**
-
-```dart
-class MyWidget extends StatelessWidget {  // ❌ ZoneWidget ではない
-  @override
-  Widget build(BuildContext context) {
-    throw fetchData();  // ❌ キャッチされません
-  }
-}
-
-class MyButton extends ZoneWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => throw Exception('Error'),  // ❌ build() の外
-      child: Text('Click'),
-    );
-  }
-}
-```
-
-#### 他のウィジェットタイプと ZoneElement を使用する
-
-`ZoneWidget` や `StatefulZoneWidget` を継承する必要はありません - `ZoneElement` を mixin した element を作成すれば、**任意のウィジェットタイプ**で使用できます。これにより、`flutter_hooks` などの他のライブラリと組み合わせることができます：
-
-```dart
-// HookWidget と ZoneElement を組み合わせたカスタム基底クラス
-abstract class ZoneHookWidget extends HookWidget {
-  const ZoneHookWidget({super.key});
-
-  @override
-  ZoneHookElement createElement() => ZoneHookElement(this);
-}
-
-// HookElement と ZoneElement を組み合わせたカスタム element
-class ZoneHookElement extends StatelessElement with HookElement, ZoneElement {
-  ZoneHookElement(super.widget);
-}
-
-// ZoneWidget のように使用できます
-class MyWidget extends ZoneHookWidget {
-  const MyWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final counter = useState(0);
-    // future をメモ化してリビルド間で同じインスタンスを再利用する
-    final future = useMemoized(() => fetchData());
-
-    // ✅ Hooks と AsyncZone の両方が使えます！
-    final data = AsyncZone.of(context).use(future);
-
-    return Column(
-      children: [
-        Text('カウンター: ${counter.value}'),
-        Text('データ: $data'),
-        ElevatedButton(
-          onPressed: () => counter.value++,
-          child: Text('増加'),
-        ),
-      ],
-    );
-  }
-}
-```
-
-**重要なポイント:**
-
-- 本質的な要件は、ウィジェットの element が `ZoneElement` を mixin していること
-- `ZoneElement` を `HookElement` や他のカスタム element と組み合わせられます
-- これにより async_zone は様々な Flutter ライブラリやパターンと互換性があります
+`flutter_hooks` の `HookElement` のように他の `Element` mixin と組み合わせたい
+場合は、自前でボイラープレートを書くより
+[hooks_async_zone](https://pub.dev/packages/hooks_async_zone) を使うのが手軽
+です。それ以外のライブラリと組み合わせる場合は、`ZoneElement` を mixin した
+カスタム `Element` を定義するだけで動きます。
 
 ### AsyncZone
 
@@ -257,7 +201,9 @@ class _MyWidgetState extends State<MyWidget> {
 
 #### よくある落とし穴
 
-キャッシュキーは **`Future` インスタンスそのものの同一性** です。リビルドのたびに新しい `Future` が生成されるような書き方をすると、キャッシュは一度もヒットせず無限リビルドループに陥ります。代表的な失敗パターン：
+キャッシュキーは **`Future` インスタンスそのものの同一性** です。リビルドの
+たびに新しい `Future` が生成されるような書き方をすると、キャッシュは一度も
+ヒットせず無限リビルドループに陥ります。
 
 **❌ `build()` の中で fetcher を直接呼ぶ**
 
@@ -272,7 +218,8 @@ Widget build(BuildContext context) {
 
 **❌ `build()` の中で `.then()` / `.catchError()` / `.timeout()` などをチェーンする**
 
-`Future.then()` は呼ぶたびに **新しい `Future`** を返します。
+`Future.then()` は呼ぶたびに **新しい `Future`** を返すので、`build()` 内で
+チェーンするのは fetcher を直接呼ぶのと同じ問題になります：
 
 ```dart
 late final Future<User> _userFuture = fetchUser();
@@ -290,43 +237,14 @@ Widget build(BuildContext context) {
 ```dart
 late final Future<User> _userFuture = fetchUser();
 late final Future<String> _nameFuture = _userFuture.then((u) => u.name);
-
-@override
-Widget build(BuildContext context) {
-  final name = AsyncZone.of(context).use(_nameFuture);
-  return Text(name);
-}
 ```
 
-**❌ `build()` の中で async クロージャを即時実行する**
-
-クロージャ呼び出しはそのたびに新しい `Future` を生成します：
-
-```dart
-@override
-Widget build(BuildContext context) {
-  final user = AsyncZone.of(context).use((() async {
-    return await fetchUser();
-  })());
-  return Text(user.name);
-}
-```
-
-✅ Future を `build()` の外で 1 度だけ作って使い回す：
-
-```dart
-late final Future<User> _userFuture = (() async {
-  return await fetchUser();
-})();
-
-@override
-Widget build(BuildContext context) {
-  final user = AsyncZone.of(context).use(_userFuture);
-  return Text(user.name);
-}
-```
-
-**判断基準:** `use()` に渡している **その `Future` インスタンス** を保持している `late final` フィールド・`State` フィールド・hook ref（`useMemoized` / `useState`）・外部ストアが指し示せないなら、キャッシュはミスします。迷ったら、まず Future を名前付き変数に入れてから `use()` に渡してください。
+**判断基準:** `use()` に渡している **その `Future` インスタンス** を保持して
+いる `late final` フィールド・`State` フィールド・hook ref（`useMemoized` /
+`useState`）・外部ストアが指し示せないなら、キャッシュはミスします。
+`(() async { ... })()` のような即時実行クロージャや、`build()` 内で新しい
+`Future` を生成するあらゆる式が同じ罠です。迷ったら、まず Future を名前付き
+変数に入れてから `use()` に渡してください。
 
 #### 上級 - 直接 throw
 
@@ -368,6 +286,51 @@ class _MyWidgetState extends State<MyWidget> {
 - **直接 `throw`**: より多くの制御が可能ですが、慎重な状態管理が必要です
 
 ## 高度な使用方法
+
+### `AsyncZone` のネスト
+
+`AsyncZone` はそのまま入れ子にできます。各ゾーンが見るのは
+`AsyncZone.of(context)` で **そのゾーン自身** に解決されるツリー、つまり
+内側ゾーンの `InheritedWidget` より下の `ZoneWidget` だけです。外側のゾーンは
+2つのゾーンの間にある（あるいは内側ゾーンの外にある）ウィジェットが suspend
+したときにだけ fallback を表示します。
+
+```dart
+AsyncZone(                          // outer
+  fallback: const Text('outer…'),
+  child: Column(children: [
+    SuspendsAgainstOuter(),          // ここで suspend → outer fallback
+    AsyncZone(                       // inner
+      fallback: const Text('inner…'),
+      child: SuspendsAgainstInner(), // ここで suspend → inner fallback のみ
+    ),
+  ]),
+)
+```
+
+キャッシュ（`use()` の結果）と pending 中のタスク集合は `AsyncZone` ごとに
+独立しているので、2つのゾーンが状態を共有することはありません。内側ツリーを
+**外側のゾーンに対して** suspend させたい場合は、suspend する側を内側
+`AsyncZone` の上に持ち上げてください。
+
+### ライフサイクルと unmount 時の挙動
+
+実アプリで動かしたときに気になりそうな点：
+
+- **unmount で pending な Future はキャンセルされません。** Dart の `Future`
+  にキャンセルの仕組みは無いためです。element の `mounted` ガードによって
+  後から完了しても黙って無視され、dispose 済みの element に対して
+  `markNeedsBuild()` が呼ばれることはありませんが、HTTP リクエストなどの裏の
+  処理は走り続けます。本当にキャンセルしたい場合は `package:async` の
+  `CancelableOperation` を使ってください。
+- **キャッシュはライフサイクルではなく GC で管理されます。**
+  `AsyncZoneProviderElement` は完了値を `Expando` で `Future` インスタンス
+  ベースに保持するので、Future への参照がなくなれば自動的に GC 対象に
+  なります。手動で破棄する API はありません。
+- **Hot reload では `late final` フィールドが再評価されません。** 前回の実行
+  時に初期化された `late final _future = fetchData()` は hot reload では再
+  実行されないため、fetcher の中身を変えたときは hot restart しないと反映
+  されません。
 
 ### 並行ビルド vs シーケンシャルビルド
 
@@ -436,6 +399,21 @@ final post = use(postFuture); // 任意の T で使える
 - **freeze 中は AsyncZone 配下への top-down 伝播が止まります。** 前 subtree を画面に残す代償として、新しい widget config が降りてこない設計です。subtree 内の `Listenable` 由来の再 build は引き続き動きますが、suspend している widget 自身は future が解決するまで表示を更新できません。
 
 ### カスタムエラーゾーン
+
+#### `ErrorBoundary` と `ErrorZoneWidget` の使い分け
+
+姉妹パッケージの [error_boundary](https://pub.dev/packages/error_boundary)
+は `ErrorZoneWidget` を 1 つの設定可能なウィジェット（`ErrorBoundary`）に
+ラップしたものです。低レベル API を直接触る必要がなければ、こちらを使うのが
+基本です。
+
+| やりたいこと                                                            | 使うべきもの                             |
+| ----------------------------------------------------------------------- | ---------------------------------------- |
+| `builder(context, error, reset)` で fallback を組み立てたい             | `ErrorBoundary`（error_boundary）        |
+| 外部値の変化で自動リセットしたい（`resetKeys`）                         | `ErrorBoundary`（error_boundary）        |
+| サブクラス化せず `onError` / `onReset` コールバックを使いたい           | `ErrorBoundary`（error_boundary）        |
+| `(error: …)` 以外の独自 state（リトライ回数・エラー種別など）を持ちたい | `ErrorZoneWidget<T>`                     |
+| `StatelessWidget` 以外の階層にエラー境界ライフサイクルを組み込みたい    | `ErrorBoundaryMixin<T>` + 自前 `Element` |
 
 #### Method 1: ErrorZoneWidget を継承
 
@@ -533,11 +511,11 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 
 ### AsyncZone
 
-| プロパティ            | 型       | 説明                                               |
-| --------------------- | -------- | -------------------------------------------------- |
-| `fallback`            | `Widget` | 非同期処理が保留中の間に表示するウィジェット       |
-| `child`               | `Widget` | メインコンテンツウィジェット                       |
-| `allowConcurrentBuilds` | `bool` | 兄弟 `ZoneWidget` が並行に suspend できるか（デフォルト: `true`） |
+| プロパティ              | 型       | 説明                                                              |
+| ----------------------- | -------- | ----------------------------------------------------------------- |
+| `fallback`              | `Widget` | 非同期処理が保留中の間に表示するウィジェット                      |
+| `child`                 | `Widget` | メインコンテンツウィジェット                                      |
+| `allowConcurrentBuilds` | `bool`   | 兄弟 `ZoneWidget` が並行に suspend できるか（デフォルト: `true`） |
 
 **メソッド:**
 
