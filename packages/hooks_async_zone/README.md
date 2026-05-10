@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-A Flutter package that provides [flutter_hooks](https://pub.dev/packages/flutter_hooks) integration for [async_zone](https://pub.dev/packages/async_zone).
+A Flutter package that provides [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) integration for [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone).
 
 ## Features
 
@@ -62,7 +62,7 @@ AsyncZone(
 
 ## Why hooks_async_zone?
 
-To use [async_zone](https://pub.dev/packages/async_zone) with [flutter_hooks](https://pub.dev/packages/flutter_hooks), you need custom elements that mixin both `HookElement` and `ZoneElement`:
+To use [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) with [flutter_hooks](https://github.com/rrousselGit/flutter_hooks), you need custom elements that mixin both `HookElement` and `ZoneElement`:
 
 ```dart
 // Without hooks_async_zone:
@@ -160,9 +160,9 @@ final data = zone.use(future);
 
 ## Related Packages
 
-- [async_zone](https://pub.dev/packages/async_zone) - Declarative async operations and error boundaries
-- [error_boundary](https://pub.dev/packages/error_boundary) - Declarative error handling
-- [flutter_hooks](https://pub.dev/packages/flutter_hooks) - React hooks for Flutter
+- [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) - Declarative async operations and error boundaries
+- [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) - Declarative error handling
+- [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) - React hooks for Flutter
 
 ## License
 

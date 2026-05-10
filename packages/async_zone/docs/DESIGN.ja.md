@@ -107,7 +107,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 **コントローラーパターン**: Widget がコントローラー保持（一時的）、Element がアタッチ（永続的）。
 
-> **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [error_boundary](https://pub.dev/packages/error_boundary) をご確認ください。
+> **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) をご確認ください。
 
 ### 4. Freeze 機構（transition 風の差し替え）
 

@@ -107,7 +107,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 **Controller Pattern**: Widget holds controller (ephemeral), Element attaches to it (persistent).
 
-> **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://pub.dev/packages/error_boundary) package.
+> **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) package.
 
 ### 4. Freeze Mechanism (transition-style swap)
 

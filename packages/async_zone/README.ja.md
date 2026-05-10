@@ -131,7 +131,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 }
 ```
 
-> **Note:** よりシンプルなエラーバウンダリー実装については、[error_boundary](https://pub.dev/packages/error_boundary) パッケージをご確認ください。
+> **Note:** よりシンプルなエラーバウンダリー実装については、[error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) パッケージをご確認ください。
 
 ## コアコンセプト
 
@@ -163,7 +163,7 @@ class WrongHandler extends ZoneWidget {
 
 `flutter_hooks` の `HookElement` のように他の `Element` mixin と組み合わせたい
 場合は、自前でボイラープレートを書くより
-[hooks_async_zone](https://pub.dev/packages/hooks_async_zone) を使うのが手軽
+[hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) を使うのが手軽
 です。それ以外のライブラリと組み合わせる場合は、`ZoneElement` を mixin した
 カスタム `Element` を定義するだけで動きます。
 
@@ -358,7 +358,7 @@ AsyncZone(
 
 `use()` にはオプションの `freeze` フラグがあります。`true` を渡すと、新しい future が pending の間、`AsyncZone` は **fallback に切り替えるかわりに直前の subtree を画面に残し続けます**。素早く再読み込みする UX で fallback がチラつくのを避けるための「transition 風」の挙動です。
 
-> **Note:** この機能は Suspense 流のプリミティブとして用意してあるだけで、**通常のプロダクト用途には推奨しません**。実アプリでは [Riverpod](https://pub.dev/packages/riverpod) や [fquery](https://pub.dev/packages/fquery) のようなキャッシュライブラリの方が柔軟（stale-while-revalidate、明示的な `isFetching` フラグなど）です。Suspense の枠内に意図的に留まりたい場合のみ使ってください。
+> **Note:** この機能は Suspense 流のプリミティブとして用意してあるだけで、**通常のプロダクト用途には推奨しません**。実アプリでは [Riverpod](https://github.com/rrousselGit/riverpod) や [fquery](https://github.com/41y08h/fquery) のようなキャッシュライブラリの方が柔軟（stale-while-revalidate、明示的な `isFetching` フラグなど）です。Suspense の枠内に意図的に留まりたい場合のみ使ってください。
 
 #### 基本的な使い方
 
@@ -402,7 +402,7 @@ final post = use(postFuture); // 任意の T で使える
 
 #### `ErrorBoundary` と `ErrorZoneWidget` の使い分け
 
-姉妹パッケージの [error_boundary](https://pub.dev/packages/error_boundary)
+姉妹パッケージの [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary)
 は `ErrorZoneWidget` を 1 つの設定可能なウィジェット（`ErrorBoundary`）に
 ラップしたものです。低レベル API を直接触る必要がなければ、こちらを使うのが
 基本です。

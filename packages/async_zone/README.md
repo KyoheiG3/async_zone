@@ -131,7 +131,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 }
 ```
 
-> **Note:** For a simpler error boundary implementation, check out the [error_boundary](https://pub.dev/packages/error_boundary) package.
+> **Note:** For a simpler error boundary implementation, check out the [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) package.
 
 ## Core Concepts
 
@@ -163,7 +163,7 @@ class WrongHandler extends ZoneWidget {
 
 If you need to combine `ZoneElement` with another `Element` mixin (e.g.
 `HookElement` from `flutter_hooks`), use the
-[hooks_async_zone](https://pub.dev/packages/hooks_async_zone) package instead
+[hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) package instead
 of building the boilerplate yourself. For other libraries, define a custom
 `Element` that mixes in `ZoneElement` — that is the only requirement.
 
@@ -357,7 +357,7 @@ AsyncZone(
 
 `use()` accepts an optional `freeze` flag. When `true`, the surrounding `AsyncZone` keeps the previously rendered subtree on screen while the new future is pending, instead of swapping to the fallback. This gives a "transition-style" reload (no fallback flash on rapid swaps).
 
-> **Note:** This is provided for completeness as a Suspense-style primitive, and **not generally recommended for production**. In real apps, caching libraries such as [Riverpod](https://pub.dev/packages/riverpod) or [fquery](https://pub.dev/packages/fquery) usually offer a more flexible solution (stale-while-revalidate, explicit `isFetching` flags, etc.). Reach for `freeze` only if you intentionally want to stay inside the Suspense pattern.
+> **Note:** This is provided for completeness as a Suspense-style primitive, and **not generally recommended for production**. In real apps, caching libraries such as [Riverpod](https://github.com/rrousselGit/riverpod) or [fquery](https://github.com/41y08h/fquery) usually offer a more flexible solution (stale-while-revalidate, explicit `isFetching` flags, etc.). Reach for `freeze` only if you intentionally want to stay inside the Suspense pattern.
 
 #### Basic usage
 
@@ -401,7 +401,7 @@ The `built` ref starts `false`, so the first `use()` call falls through to the n
 
 #### Choosing between `ErrorBoundary` and `ErrorZoneWidget`
 
-The companion [error_boundary](https://pub.dev/packages/error_boundary)
+The companion [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary)
 package wraps `ErrorZoneWidget` into a single configurable widget
 (`ErrorBoundary`). Reach for it unless you have a specific reason to drop
 down to the lower-level API.

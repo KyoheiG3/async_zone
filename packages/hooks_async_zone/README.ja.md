@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語**
 
-[async_zone](https://pub.dev/packages/async_zone) に [flutter_hooks](https://pub.dev/packages/flutter_hooks) の統合を提供する Flutter パッケージです。
+[async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) に [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) の統合を提供する Flutter パッケージです。
 
 ## 機能
 
@@ -62,7 +62,7 @@ AsyncZone(
 
 ## なぜ hooks_async_zone が必要？
 
-[async_zone](https://pub.dev/packages/async_zone) を [flutter_hooks](https://pub.dev/packages/flutter_hooks) と一緒に使うには、`HookElement` と `ZoneElement` の両方を mixin したカスタム要素が必要です：
+[async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) を [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) と一緒に使うには、`HookElement` と `ZoneElement` の両方を mixin したカスタム要素が必要です：
 
 ```dart
 // hooks_async_zone を使わない場合:
@@ -160,9 +160,9 @@ final data = zone.use(future);
 
 ## 関連パッケージ
 
-- [async_zone](https://pub.dev/packages/async_zone) - 宣言的な非同期操作とエラーバウンダリ
-- [error_boundary](https://pub.dev/packages/error_boundary) - 宣言的なエラーハンドリング
-- [flutter_hooks](https://pub.dev/packages/flutter_hooks) - Flutter 用の React hooks
+- [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) - 宣言的な非同期操作とエラーバウンダリ
+- [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) - 宣言的なエラーハンドリング
+- [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) - Flutter 用の React hooks
 
 ## ライセンス
 
