@@ -72,13 +72,9 @@ class SamplePage extends HookWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             ErrorBoundary(
-              builder: (context, error, reset) => _ErrorCard(
-                error: error,
-                onRetry: () {
-                  reset();
-                  loadUser(1);
-                },
-              ),
+              onReset: (_) => loadUser(1),
+              builder: (context, error, reset) =>
+                  _ErrorCard(error: error, onRetry: reset),
               child: AsyncZone(
                 fallback: CircularProgressIndicator(),
                 child: UserCard(userFuture: userFuture.value),

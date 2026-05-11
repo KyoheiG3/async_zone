@@ -20,6 +20,7 @@ const fetchUser = async (id: number): Promise<User> => {
 class ErrorBoundary extends Component<
   {
     fallback: (error: Error, reset: () => void) => ReactNode;
+    onReset?: () => void;
     children: ReactNode;
   },
   { error: Error | null }
@@ -30,7 +31,10 @@ class ErrorBoundary extends Component<
     return { error };
   }
 
-  reset = () => this.setState({ error: null });
+  reset = () => {
+    this.setState({ error: null });
+    this.props.onReset?.();
+  };
 
   render() {
     if (this.state.error) {
@@ -65,16 +69,11 @@ export default function App() {
       <Text style={styles.title}>Suspense + use() sample</Text>
 
       <ErrorBoundary
+        onReset={() => loadUser(1)}
         fallback={(error, reset) => (
           <View style={styles.card}>
             <Text style={styles.error}>Error: {error.message}</Text>
-            <Button
-              title="Retry"
-              onPress={() => {
-                reset();
-                loadUser(1);
-              }}
-            />
+            <Button title="Retry" onPress={reset} />
           </View>
         )}
       >
