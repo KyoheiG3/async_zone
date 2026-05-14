@@ -92,7 +92,16 @@ class AsyncZoneProviderElement extends InheritedElement
 
   @override
   Widget build() {
-    return _tasks.isNotEmpty ? _widget.fallback : super.build();
+    return Stack(
+      children: [
+        Visibility(
+          visible: _tasks.isEmpty,
+          maintainState: true,
+          child: super.build(),
+        ),
+        if (_tasks.isNotEmpty) _widget.fallback,
+      ],
+    );
   }
 
   @override
@@ -115,12 +124,17 @@ class AsyncZoneProviderElement extends InheritedElement
           _errors[future] = error;
         })
         .whenComplete(() {
-          _tasks.remove(future);
-
-          if (_tasks.isEmpty && mounted) {
+          // Skip if already superseded: remove returns null when the entry
+          // is no longer tracked, short-circuiting the rebuild.
+          if (_tasks.remove(future) != null && _tasks.isEmpty && mounted) {
             markNeedsBuild();
           }
         });
+  }
+
+  @override
+  void supersedeFuture(Future<dynamic> future) {
+    _tasks.remove(future);
   }
 
   /// Consumes a future and returns its value when complete.

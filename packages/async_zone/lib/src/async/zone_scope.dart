@@ -35,6 +35,16 @@ abstract class AsyncZoneProviderScope {
   /// being replaced with the fallback widget.
   void showFallback(Future future, {bool freeze = false});
 
+  /// Drops [future] from the set of tracked tasks without waiting for it to
+  /// complete.
+  ///
+  /// Used when a caller has decided that a previously-tracked future is no
+  /// longer relevant — typically because the caller rebuilt with new state
+  /// and threw a fresh future. The listener chain attached in [showFallback]
+  /// stays bound to the original future, but becomes a no-op once the entry
+  /// is removed here.
+  void supersedeFuture(Future future);
+
   /// Returns whether child widgets are allowed to build.
   ///
   /// Returns `false` if concurrent builds are disabled and there are pending tasks.

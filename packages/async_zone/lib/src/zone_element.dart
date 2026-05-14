@@ -38,13 +38,17 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     final asyncZone = AsyncZoneProvider.maybeOf(this);
     final errorZone = ErrorZoneProvider.maybeOf(this);
 
+    // A rebuild means the widget/state has potentially changed, so any future
+    // left over from a previous attempt is no longer the one we're waiting
+    // on. Drop it before consulting canBuildChild — superseding may also
+    // empty the provider's tracked tasks and re-enable building.
+    _supersedePendingTasks(asyncZone);
+
     void handleFuture(Future future, {bool freeze = false}) {
       asyncZone?.showFallback(future, freeze: freeze);
 
       void completeHandler() {
-        _tasks.remove(future);
-
-        if (_tasks.isEmpty && mounted) {
+        if (_tasks.remove(future) && _tasks.isEmpty && mounted) {
           markNeedsBuild();
         }
       }
@@ -81,9 +85,29 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   }
 
   @override
+  void deactivate() {
+    // Ancestor lookup is only safe while still active. supersede here rather
+    // than in unmount so the provider can drop these tasks from its set.
+    _supersedePendingTasks(AsyncZoneProvider.maybeOf(this));
+    super.deactivate();
+  }
+
+  @override
   void unmount() {
     _tasks.clear();
     _error = null;
     super.unmount();
+  }
+
+  /// Asks [asyncZone] to drop every future this element is currently tracking,
+  /// then clears the local set. No-op when there is nothing pending.
+  void _supersedePendingTasks(AsyncZoneProviderScope? asyncZone) {
+    if (_tasks.isEmpty) return;
+    if (asyncZone != null) {
+      for (final future in _tasks) {
+        asyncZone.supersedeFuture(future);
+      }
+    }
+    _tasks.clear();
   }
 }
