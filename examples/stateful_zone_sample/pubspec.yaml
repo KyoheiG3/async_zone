@@ -1,0 +1,26 @@
+name: stateful_zone_sample
+description: "Sample app demonstrating async_zone with StatefulZoneWidget (no Hooks)."
+version: 1.0.0
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  async_zone:
+  error_boundary:
+  cupertino_icons: ^1.0.8
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
