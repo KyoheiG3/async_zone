@@ -330,34 +330,6 @@ A few things worth knowing once an app actually runs:
   fetchData()` set during a previous run is not re-run on hot reload, so
   edits to the fetcher body do not take effect until you hot restart.
 
-### Concurrent vs Sequential Builds
-
-Control whether sibling `ZoneWidget`s in this zone may build concurrently
-while another future is pending:
-
-```dart
-AsyncZone(
-  allowConcurrentBuilds: false, // Default is true
-  fallback: CircularProgressIndicator(),
-  child: MyWidget(),
-)
-```
-
-- `true` (default): each `ZoneWidget` evaluates independently and may suspend
-  on its own future. All thrown futures are awaited concurrently and the
-  fallback is shown until every one of them resolves.
-- `false`: only one `ZoneWidget` is allowed to suspend at a time. As soon as
-  one future is thrown, sibling `ZoneWidget`s render an empty placeholder
-  for the rest of that build pass — their futures are not started until the
-  in-flight one completes (sequential loading). Plain `StatelessWidget` /
-  `StatefulWidget` descendants are unaffected; this flag only gates
-  `ZoneElement`-mixed elements.
-
-> **Note:** Frozen futures (`use(future, freeze: true)`) are exempt from
-> this gate. They are not registered with the zone as tracked tasks, so
-> other `ZoneWidget`s keep building normally even when
-> `allowConcurrentBuilds: false`.
-
 ### Freeze: Keep Previous UI During Reload (Optional)
 
 `use()` accepts an optional `freeze` flag. When `true`, the surrounding `AsyncZone` keeps the previously rendered subtree on screen while the new future is pending, instead of swapping to the fallback. This gives a "transition-style" reload (no fallback flash on rapid swaps).
@@ -400,7 +372,7 @@ The `built` ref starts `false`, so the first `use()` call falls through to the n
 #### Caveats
 
 - **No `isPending` indicator.** The freeze state is only confirmed *after* the future is thrown, so any widget upstream that would react to it has already built with the old value. Cross-fade or opacity dimming during freeze has to be driven by your own state (e.g. a `ChangeNotifier`).
-- **Freeze is local to the suspending widget.** Only the calling `ZoneWidget`'s own subtree is kept on screen — sibling `ZoneWidget`s under the same `AsyncZone` continue to build normally, and updates from above (theme/locale changes, etc.) still propagate. A suspending widget cannot update its display until the future resolves, but it does not block the rest of the zone. As a corollary, frozen futures do not count against `allowConcurrentBuilds: false`: other `ZoneWidget`s remain free to build even while one is frozen.
+- **Freeze is local to the suspending widget.** Only the calling `ZoneWidget`'s own subtree is kept on screen — sibling `ZoneWidget`s under the same `AsyncZone` continue to build normally, and updates from above (theme/locale changes, etc.) still propagate. A suspending widget cannot update its display until the future resolves, but it does not block the rest of the zone.
 
 ### Inside `CustomScrollView`
 
@@ -538,11 +510,10 @@ Check out the [example](example/) directory for complete examples including:
 
 ### AsyncZone
 
-| Property              | Type     | Description                                          |
-| --------------------- | -------- | ---------------------------------------------------- |
-| `fallback`            | `Widget` | Widget to display while async operations are pending |
-| `child`               | `Widget` | Main content widget                                  |
-| `allowConcurrentBuilds` | `bool` | Whether sibling `ZoneWidget`s may suspend concurrently (default: `true`) |
+| Property   | Type     | Description                                          |
+| ---------- | -------- | ---------------------------------------------------- |
+| `fallback` | `Widget` | Widget to display while async operations are pending |
+| `child`    | `Widget` | Main content widget                                  |
 
 **Methods:**
 

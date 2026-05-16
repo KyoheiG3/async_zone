@@ -21,8 +21,7 @@ abstract class AsyncZoneScope {
   /// The freeze is local to the calling widget: sibling [ZoneWidget]s under
   /// the same [AsyncZone] continue to build normally and the provider does
   /// not treat the pending future as a tracked task, so [AsyncZone]'s
-  /// fallback never appears for a frozen future and the future does not
-  /// count against [AsyncZone.allowConcurrentBuilds].
+  /// fallback never appears for a frozen future.
   T use<T>(Future<T> future, {bool freeze = false});
 }
 
@@ -49,11 +48,6 @@ abstract class AsyncZoneProviderScope {
   /// stays bound to the original future, but becomes a no-op once the entry
   /// is removed here.
   void supersedeFuture(Future future);
-
-  /// Returns whether child widgets are allowed to build.
-  ///
-  /// Returns `false` if concurrent builds are disabled and there are pending tasks.
-  bool canBuildChild();
 }
 
 /// Marker interface implemented by Elements whose build phase can catch the

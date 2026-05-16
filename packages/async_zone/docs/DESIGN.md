@@ -162,7 +162,6 @@ document is intentionally the design counterpart, not the API reference.
 
 - **Skip child updates**: Prevent ErrorWidget flash during loading (see FAQ Q1)
 - **Double rebuild**: Immediate state reflection (see FAQ Q6)
-- **Concurrent builds**: Control with `allowConcurrentBuilds`
 
 ### Build Optimization
 

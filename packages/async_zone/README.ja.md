@@ -332,33 +332,6 @@ AsyncZone(                          // outer
   実行されないため、fetcher の中身を変えたときは hot restart しないと反映
   されません。
 
-### 並行ビルド vs シーケンシャルビルド
-
-このゾーン配下の兄弟 `ZoneWidget` が、他の future の保留中に並行してビルド
-できるかどうかを制御します：
-
-```dart
-AsyncZone(
-  allowConcurrentBuilds: false, // デフォルトは true
-  fallback: CircularProgressIndicator(),
-  child: MyWidget(),
-)
-```
-
-- `true`（デフォルト）: 各 `ZoneWidget` が独立して評価され、それぞれ自分の
-  future で suspend できます。throw された future はすべて並行に await され、
-  すべて解決するまで fallback が表示されます。
-- `false`: 同時に suspend できる `ZoneWidget` は 1 つだけです。最初の future
-  が throw された時点で、そのビルドパスの間は他の `ZoneWidget` は空の
-  プレースホルダになり、進行中の future が完了するまで自分の future は
-  発火しません（シーケンシャルロード）。`ZoneElement` を mixin していない
-  通常の `StatelessWidget` / `StatefulWidget` には影響しません。
-
-> **Note:** frozen な future (`use(future, freeze: true)`) はこのゲートの
-> 対象外です。ゾーンの tracked task として登録されないので、
-> `allowConcurrentBuilds: false` でも他の `ZoneWidget` は通常通り
-> build されます。
-
 ### Freeze: リロード中も前の UI を保つ（オプション）
 
 `use()` にはオプションの `freeze` フラグがあります。`true` を渡すと、新しい future が pending の間、`AsyncZone` は **fallback に切り替えるかわりに直前の subtree を画面に残し続けます**。素早く再読み込みする UX で fallback がチラつくのを避けるための「transition 風」の挙動です。
@@ -401,7 +374,7 @@ final post = use(postFuture); // 任意の T で使える
 #### 注意点
 
 - **`isPending` 相当の表示はできません。** freeze 状態が確定するのは Future が throw された **後** で、それを読みたい上流 widget はすでに古い値で build を済ませてしまっています。フェードや opacity を変えるような UX は別途自前の state（`ChangeNotifier` など）で駆動する必要があります。
-- **freeze は呼び出した widget にローカルです。** 前 subtree が画面に残るのは `use()` を呼んだ `ZoneWidget` 自身の subtree だけで、同じ `AsyncZone` 配下の兄弟 `ZoneWidget` は通常通り build され、上位からの変更（テーマ／ロケール等）も伝播します。suspend している widget 自身は future が解決するまで表示を更新できませんが、ゾーン全体を止めることはありません。この帰結として、frozen future は `allowConcurrentBuilds: false` のゲートにもカウントされません — 他の `ZoneWidget` は freeze 中でも自由に build できます。
+- **freeze は呼び出した widget にローカルです。** 前 subtree が画面に残るのは `use()` を呼んだ `ZoneWidget` 自身の subtree だけで、同じ `AsyncZone` 配下の兄弟 `ZoneWidget` は通常通り build され、上位からの変更（テーマ／ロケール等）も伝播します。suspend している widget 自身は future が解決するまで表示を更新できませんが、ゾーン全体を止めることはありません。
 
 ### `CustomScrollView` の中で使う
 
@@ -539,11 +512,10 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 
 ### AsyncZone
 
-| プロパティ              | 型       | 説明                                                              |
-| ----------------------- | -------- | ----------------------------------------------------------------- |
-| `fallback`              | `Widget` | 非同期処理が保留中の間に表示するウィジェット                      |
-| `child`                 | `Widget` | メインコンテンツウィジェット                                      |
-| `allowConcurrentBuilds` | `bool`   | 兄弟 `ZoneWidget` が並行に suspend できるか（デフォルト: `true`） |
+| プロパティ | 型       | 説明                                         |
+| ---------- | -------- | -------------------------------------------- |
+| `fallback` | `Widget` | 非同期処理が保留中の間に表示するウィジェット |
+| `child`    | `Widget` | メインコンテンツウィジェット                 |
 
 **メソッド:**
 

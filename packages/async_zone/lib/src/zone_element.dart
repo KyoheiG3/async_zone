@@ -22,9 +22,8 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   final Set<Future<dynamic>> _tasks = {};
   dynamic _error;
 
-  /// Placeholder widget returned when this element cannot build its child —
-  /// either because a sibling future is still pending (concurrent builds are
-  /// disabled) or after an exception has been routed to a fallback.
+  /// Placeholder widget returned when this element cannot build its child
+  /// because a thrown future or error was routed to a fallback this frame.
   ///
   /// Defaults to the box-shaped [Empty] sentinel. Sliver-shaped subclasses
   /// (e.g. `StatelessSliverZoneElement`) override this so the placeholder
@@ -48,9 +47,9 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     final errorZone = ErrorZoneProvider.maybeOf(this);
 
     // A rebuild means the widget/state has potentially changed, so any future
-    // left over from a previous attempt is no longer the one we're waiting
-    // on. Drop it before consulting canBuildChild — superseding may also
-    // empty the provider's tracked tasks and re-enable building.
+    // left over from a previous attempt is no longer the one we're waiting on.
+    // Drop it before throwing the new one, so the provider's tracked task set
+    // reflects only the futures from this build pass.
     _supersedePendingTasks(asyncZone);
 
     void handleFuture(Future future, {bool freeze = false}) {
@@ -79,9 +78,7 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     }
 
     try {
-      return (asyncZone?.canBuildChild() ?? true)
-          ? super.build()
-          : emptyPlaceholder;
+      return super.build();
     } on FrozenFuture catch (frozen) {
       handleFuture(frozen.inner, freeze: true);
     } on Future catch (future) {

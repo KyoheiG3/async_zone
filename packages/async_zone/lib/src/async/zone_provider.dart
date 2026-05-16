@@ -16,14 +16,9 @@ class AsyncZoneProvider extends InheritedWidget {
   /// All parameters are required.
   const AsyncZoneProvider({
     super.key,
-    required this.allowConcurrentBuilds,
     required this.fallback,
     required super.child,
   });
-
-  /// Whether sibling [ZoneWidget]s in this zone may build concurrently while
-  /// another future is pending. See [AsyncZone.allowConcurrentBuilds].
-  final bool allowConcurrentBuilds;
 
   /// The fallback widget to show while async operations are pending.
   final Widget fallback;
@@ -95,9 +90,6 @@ class AsyncZoneProviderElement extends InheritedElement
       ],
     );
   }
-
-  @override
-  bool canBuildChild() => _widget.allowConcurrentBuilds || _tasks.isEmpty;
 
   @override
   void showFallback(Future<dynamic> future) {
