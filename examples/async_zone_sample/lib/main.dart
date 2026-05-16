@@ -53,12 +53,6 @@ class SamplePage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final id = useState(1);
-    final userFuture = useState(useMemoized(() => fetchUser(1)));
-
-    void loadUser(int nextId) {
-      id.value = nextId;
-      userFuture.value = fetchUser(nextId);
-    }
 
     return Center(
       child: Padding(
@@ -72,12 +66,12 @@ class SamplePage extends HookWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             ErrorBoundary(
-              onReset: (_) => loadUser(1),
+              onReset: (_) => id.value = 1,
               builder: (context, error, reset) =>
                   _ErrorCard(error: error, onRetry: reset),
               child: AsyncZone(
                 fallback: CircularProgressIndicator(),
-                child: UserCard(userFuture: userFuture.value),
+                child: UserCard(id: id.value),
               ),
             ),
             Row(
@@ -85,17 +79,15 @@ class SamplePage extends HookWidget {
               spacing: 12,
               children: [
                 FilledButton.tonal(
-                  onPressed: id.value <= 1
-                      ? null
-                      : () => loadUser(id.value - 1),
+                  onPressed: id.value <= 1 ? null : () => id.value -= 1,
                   child: const Text('Prev'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => loadUser(id.value + 1),
+                  onPressed: () => id.value += 1,
                   child: const Text('Next'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => userFuture.value = fetchUser(99999),
+                  onPressed: () => id.value = 99999,
                   child: const Text('Force error'),
                 ),
               ],
@@ -108,16 +100,18 @@ class SamplePage extends HookWidget {
 }
 
 class UserCard extends HookZoneWidget {
-  const UserCard({super.key, required this.userFuture});
+  const UserCard({super.key, required this.id});
 
-  final Future<User> userFuture;
+  final int id;
 
   @override
   Widget build(BuildContext context) {
+    final reload = useState(0);
+    final userFuture = useMemoized(() => fetchUser(id), [id, reload.value]);
     final user = useAsyncZone().use(userFuture);
     return _Card(
       child: Column(
-        spacing: 4,
+        spacing: 8,
         children: [
           Text(
             user.name,
@@ -127,6 +121,10 @@ class UserCard extends HookZoneWidget {
           Text(
             'user #${user.id}',
             style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
+          ),
+          FilledButton.tonal(
+            onPressed: () => reload.value++,
+            child: const Text('Refresh'),
           ),
         ],
       ),
