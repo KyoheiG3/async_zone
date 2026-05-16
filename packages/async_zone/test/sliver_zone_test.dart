@@ -239,5 +239,167 @@ void main() {
         expect(find.text('Second'), findsOneWidget);
       });
     });
+
+    group('given a SliverZoneWidget using use(freeze: true)', () {
+      testWidgets(
+        'should keep the previous sliver subtree on reload instead of '
+        'swapping to the fallback',
+        (tester) async {
+          // Given - first render completes
+          final firstFuture = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'First',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: CustomScrollView(
+                  slivers: [SliverFreezingZoneWidget(future: firstFuture)],
+                ),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(find.text('First'), findsOneWidget);
+
+          // When - rebuild with a new future + freeze: true
+          final secondFuture = Future.delayed(
+            const Duration(milliseconds: 100),
+            () => 'Second',
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverFreezingZoneWidget(
+                      future: secondFuture,
+                      freeze: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          // Then - previous sliver subtree retained, no fallback flash
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsOneWidget);
+          expect(find.text('Second'), findsNothing);
+
+          // When - the second future completes
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Then - new content replaces the previous sliver
+          expect(find.text('First'), findsNothing);
+          expect(find.text('Second'), findsOneWidget);
+        },
+      );
+    });
+
+    group('given a nested AsyncZone with a sliver leaf inside', () {
+      testWidgets(
+        'should show only the inner fallback when the sliver leaf suspends',
+        (tester) async {
+          // Given
+          final future = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'Inner data',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('outer fallback'),
+                child: Column(
+                  children: [
+                    const Text('static sibling'),
+                    AsyncZone(
+                      fallback: const Text('inner fallback'),
+                      child: CustomScrollView(
+                        shrinkWrap: true,
+                        slivers: [SliverThrowingZoneWidget(future: future)],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          // Then - inner fallback covers the sliver subtree; outer is idle
+          expect(find.text('inner fallback'), findsOneWidget);
+          expect(find.text('outer fallback'), findsNothing);
+          expect(find.text('static sibling'), findsOneWidget);
+
+          // When - the inner future resolves
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Then - sliver content shown, outer still untouched
+          expect(find.text('Inner data'), findsOneWidget);
+          expect(find.text('inner fallback'), findsNothing);
+          expect(find.text('outer fallback'), findsNothing);
+          expect(find.text('static sibling'), findsOneWidget);
+        },
+      );
+    });
+
+    group('given a SliverZoneWidget that calls use() multiple times', () {
+      testWidgets(
+        'should suspend until every awaited future completes',
+        (tester) async {
+          // Given
+          final future1 = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'A',
+          );
+          final future2 = Future.delayed(
+            const Duration(milliseconds: 100),
+            () => 'B',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading'),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverMultipleFuturesZoneWidget(
+                      future1: future1,
+                      future2: future2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          // Then - fallback while either future is still pending
+          expect(find.text('Loading'), findsOneWidget);
+
+          // When - only the first future completes. A second pump lets the
+          // post-frame markNeedsBuild scheduled by the freshly-thrown
+          // future2 land before we assert.
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.pump();
+
+          // Then - still fallback (use(future2) throws on rebuild)
+          expect(find.text('Loading'), findsOneWidget);
+          expect(find.text('A'), findsNothing);
+          expect(find.text('B'), findsNothing);
+
+          // When - the second future completes
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Then - both values rendered
+          expect(find.text('A'), findsOneWidget);
+          expect(find.text('B'), findsOneWidget);
+          expect(find.text('Loading'), findsNothing);
+        },
+      );
+    });
   });
 }
