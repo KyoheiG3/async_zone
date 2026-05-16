@@ -30,9 +30,21 @@ class AsyncZone extends StatelessWidget {
   /// The [fallback] and [child] parameters are required.
   const AsyncZone({
     super.key,
+    this.alignment = Alignment.center,
+    this.fit = StackFit.passthrough,
     required this.fallback,
     required this.child,
   });
+
+  /// Alignment applied to the internal [Stack] that overlays [fallback] on
+  /// [child]. Defaults to [Alignment.center] so a smaller [fallback] (e.g. a
+  /// [CircularProgressIndicator]) is centered within the slot.
+  final AlignmentGeometry alignment;
+
+  /// Sizing strategy applied to the internal [Stack]. Defaults to
+  /// [StackFit.passthrough] so the constraints the [AsyncZone] receives are
+  /// forwarded to [child] and [fallback] unchanged.
+  final StackFit fit;
 
   /// The widget to display while async operations are pending.
   ///
@@ -45,6 +57,8 @@ class AsyncZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AsyncZoneProvider(
+      alignment: alignment,
+      fit: fit,
       fallback: fallback,
       child: child,
     );

@@ -12,13 +12,19 @@ import 'zone_scope.dart';
 /// This class is typically not used directly. Use [AsyncZone] instead.
 class AsyncZoneProvider extends InheritedWidget {
   /// Creates an [AsyncZoneProvider].
-  ///
-  /// All parameters are required.
   const AsyncZoneProvider({
     super.key,
+    required this.alignment,
+    required this.fit,
     required this.fallback,
     required super.child,
   });
+
+  /// Alignment applied to the internal [Stack]. See [AsyncZone.alignment].
+  final AlignmentGeometry alignment;
+
+  /// Sizing strategy applied to the internal [Stack]. See [AsyncZone.fit].
+  final StackFit fit;
 
   /// The fallback widget to show while async operations are pending.
   final Widget fallback;
@@ -80,6 +86,8 @@ class AsyncZoneProviderElement extends InheritedElement
   @override
   Widget build() {
     return Stack(
+      alignment: _widget.alignment,
+      fit: _widget.fit,
       children: [
         Visibility(
           visible: _tasks.isEmpty,
