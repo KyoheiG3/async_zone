@@ -1,0 +1,30 @@
+name: fquery_sample
+description: "Sample app demonstrating the same UX as expo-react-query-sample using fquery."
+version: 1.0.0
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  async_zone:
+  hooks_async_zone:
+  error_boundary:
+  cupertino_icons: ^1.0.8
+  flutter_hooks: ^0.21.3
+  fquery: ^3.0.2
+  fquery_core: ^3.0.2
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

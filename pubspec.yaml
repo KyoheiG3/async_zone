@@ -10,4 +10,5 @@ workspace:
   - packages/error_boundary
   - packages/hooks_async_zone
   - examples/async_zone_sample
+  - examples/fquery_sample
   - examples/sliver_zone_sample
