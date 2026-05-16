@@ -22,6 +22,15 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   final Set<Future<dynamic>> _tasks = {};
   dynamic _error;
 
+  /// Placeholder widget returned when this element cannot build its child —
+  /// either because a sibling future is still pending (concurrent builds are
+  /// disabled) or after an exception has been routed to a fallback.
+  ///
+  /// Defaults to the box-shaped [Empty] sentinel. Sliver-shaped subclasses
+  /// (e.g. `StatelessSliverZoneElement`) override this so the placeholder
+  /// remains a valid sliver inside a [CustomScrollView].
+  Widget get emptyPlaceholder => const Empty();
+
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
     return _tasks.isNotEmpty && child != null
@@ -70,7 +79,9 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     }
 
     try {
-      return (asyncZone?.canBuildChild() ?? true) ? super.build() : Empty();
+      return (asyncZone?.canBuildChild() ?? true)
+          ? super.build()
+          : emptyPlaceholder;
     } on FrozenFuture catch (frozen) {
       handleFuture(frozen.inner, freeze: true);
     } on Future catch (future) {
@@ -87,7 +98,7 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
       }
     }
 
-    return Empty();
+    return emptyPlaceholder;
   }
 
   @override
