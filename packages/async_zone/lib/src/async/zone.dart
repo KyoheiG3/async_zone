@@ -54,6 +54,10 @@ class AsyncZone extends StatelessWidget {
   /// futures are not started until the in-flight one completes. Note that
   /// non-zone widgets (plain [StatelessWidget]/[StatefulWidget]) are never
   /// affected; this flag only gates [ZoneElement]-mixed elements.
+  ///
+  /// Frozen futures (`use(future, freeze: true)`) are exempt from this gate:
+  /// they never count as a tracked task on the zone, so other [ZoneWidget]s
+  /// keep building normally even when this flag is `false`.
   final bool allowConcurrentBuilds;
 
   /// The widget to display while async operations are pending.

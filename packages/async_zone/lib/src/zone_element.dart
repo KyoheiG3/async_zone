@@ -45,7 +45,13 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     _supersedePendingTasks(asyncZone);
 
     void handleFuture(Future future, {bool freeze = false}) {
-      asyncZone?.showFallback(future, freeze: freeze);
+      // Frozen futures stay local to this element: skipping showFallback
+      // keeps the provider's tracked task set empty so the fallback never
+      // appears, while this element's own _tasks still gates updateChild
+      // to retain the previous subtree.
+      if (asyncZone != null && !freeze) {
+        asyncZone.showFallback(future);
+      }
 
       void completeHandler() {
         if (_tasks.remove(future) && _tasks.isEmpty && mounted) {

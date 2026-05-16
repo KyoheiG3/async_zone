@@ -353,6 +353,11 @@ AsyncZone(
   `StatefulWidget` descendants are unaffected; this flag only gates
   `ZoneElement`-mixed elements.
 
+> **Note:** Frozen futures (`use(future, freeze: true)`) are exempt from
+> this gate. They are not registered with the zone as tracked tasks, so
+> other `ZoneWidget`s keep building normally even when
+> `allowConcurrentBuilds: false`.
+
 ### Freeze: Keep Previous UI During Reload (Optional)
 
 `use()` accepts an optional `freeze` flag. When `true`, the surrounding `AsyncZone` keeps the previously rendered subtree on screen while the new future is pending, instead of swapping to the fallback. This gives a "transition-style" reload (no fallback flash on rapid swaps).
@@ -395,7 +400,7 @@ The `built` ref starts `false`, so the first `use()` call falls through to the n
 #### Caveats
 
 - **No `isPending` indicator.** The freeze state is only confirmed *after* the future is thrown, so any widget upstream that would react to it has already built with the old value. Cross-fade or opacity dimming during freeze has to be driven by your own state (e.g. a `ChangeNotifier`).
-- **Top-down updates are blocked while frozen.** Keeping the old subtree on screen requires that no new widget configuration descends through the `AsyncZone`. `Listenable`-driven rebuilds inside the subtree still fire, but a suspending widget cannot update its display until the future resolves.
+- **Freeze is local to the suspending widget.** Only the calling `ZoneWidget`'s own subtree is kept on screen — sibling `ZoneWidget`s under the same `AsyncZone` continue to build normally, and updates from above (theme/locale changes, etc.) still propagate. A suspending widget cannot update its display until the future resolves, but it does not block the rest of the zone. As a corollary, frozen futures do not count against `allowConcurrentBuilds: false`: other `ZoneWidget`s remain free to build even while one is frozen.
 
 ### Custom Error Zones
 

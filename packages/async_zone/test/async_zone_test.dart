@@ -421,6 +421,65 @@ void main() {
         },
       );
 
+      testWidgets(
+        'leaves siblings under the same AsyncZone free to rebuild',
+        (tester) async {
+          // Given - the frozen widget shares an AsyncZone with a plain
+          // sibling Text. The first render resolves the future so "First"
+          // is visible alongside "sibling-1".
+          final firstFuture = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'First',
+          );
+          final secondFuture = Future.delayed(
+            const Duration(milliseconds: 100),
+            () => 'Second',
+          );
+
+          Widget tree({
+            required Future<String> future,
+            required bool freeze,
+            required String label,
+          }) {
+            return MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: Column(
+                  children: [
+                    FreezingTestWidget(future: future, freeze: freeze),
+                    Text(label),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          await tester.pumpWidget(
+            tree(future: firstFuture, freeze: false, label: 'sibling-1'),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(find.text('First'), findsOneWidget);
+          expect(find.text('sibling-1'), findsOneWidget);
+
+          // When - rebuilt with a frozen new future and an updated
+          // sibling label
+          await tester.pumpWidget(
+            tree(future: secondFuture, freeze: true, label: 'sibling-2'),
+          );
+
+          // Then - the frozen widget retains its old subtree, but the
+          // sibling text updates because freeze is local to the calling
+          // ZoneWidget and does not gate top-down propagation through the
+          // AsyncZone.
+          expect(find.text('Loading...'), findsNothing);
+          expect(find.text('First'), findsOneWidget);
+          expect(find.text('sibling-1'), findsNothing);
+          expect(find.text('sibling-2'), findsOneWidget);
+
+          // Drain the pending future to avoid leaking timers.
+          await tester.pump(const Duration(milliseconds: 100));
+        },
+      );
     });
 
     group('given a pending Future superseded by a rebuild', () {

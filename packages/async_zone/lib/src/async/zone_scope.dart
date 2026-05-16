@@ -14,12 +14,15 @@ abstract class AsyncZoneScope {
   /// If the future has already completed, returns the cached result.
   /// Otherwise, throws the future to trigger the async zone's fallback UI.
   ///
-  /// When [freeze] is `true`, the previously rendered subtree below the
-  /// enclosing [AsyncZone] is **kept on screen** while the future is pending,
-  /// instead of being swapped out for the fallback. Use this for transition-
+  /// When [freeze] is `true`, the calling widget's previously rendered
+  /// subtree is **kept on screen** while the future is pending, instead of the
+  /// enclosing [AsyncZone] swapping to its fallback. Use this for transition-
   /// style updates where flashing a loading indicator would be jarring.
-  /// While frozen, no further widget updates propagate down through the zone
-  /// until the future completes.
+  /// The freeze is local to the calling widget: sibling [ZoneWidget]s under
+  /// the same [AsyncZone] continue to build normally and the provider does
+  /// not treat the pending future as a tracked task, so [AsyncZone]'s
+  /// fallback never appears for a frozen future and the future does not
+  /// count against [AsyncZone.allowConcurrentBuilds].
   T use<T>(Future<T> future, {bool freeze = false});
 }
 
@@ -31,9 +34,11 @@ abstract class AsyncZoneProviderScope {
   /// Shows the fallback UI for the given future.
   ///
   /// This method is called when a future is thrown during the build phase.
-  /// When [freeze] is `true`, the existing subtree is retained instead of
-  /// being replaced with the fallback widget.
-  void showFallback(Future future, {bool freeze = false});
+  /// Frozen futures (`use(future, freeze: true)`) are handled entirely
+  /// inside [ZoneElement] and must not be reported here — registering one
+  /// would cause the provider to swap to its fallback, defeating the
+  /// purpose of freezing.
+  void showFallback(Future future);
 
   /// Drops [future] from the set of tracked tasks without waiting for it to
   /// complete.
@@ -62,4 +67,3 @@ abstract class AsyncZoneProviderScope {
 /// Not exported from the package — this is an internal contract between
 /// `AsyncZone` and the `ZoneElement` mixin.
 abstract interface class AsyncZoneCaller {}
-

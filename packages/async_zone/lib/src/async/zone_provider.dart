@@ -59,7 +59,7 @@ class AsyncZoneProviderElement extends InheritedElement
 
   final _cache = Expando<({Object? value})>('AsyncZone cache');
   final _errors = Expando<Object>('AsyncZone errors');
-  final _tasks = <Future<dynamic>, bool>{};
+  final _tasks = <Future<dynamic>>{};
 
   var _isDuringPerformRebuild = false;
 
@@ -83,14 +83,6 @@ class AsyncZoneProviderElement extends InheritedElement
   }
 
   @override
-  Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
-    final hasFrozen = _tasks.values.any((freeze) => freeze);
-    return hasFrozen && child != null
-        ? child
-        : super.updateChild(child, newWidget, newSlot);
-  }
-
-  @override
   Widget build() {
     return Stack(
       children: [
@@ -108,7 +100,7 @@ class AsyncZoneProviderElement extends InheritedElement
   bool canBuildChild() => _widget.allowConcurrentBuilds || _tasks.isEmpty;
 
   @override
-  void showFallback(Future<dynamic> future, {bool freeze = false}) {
+  void showFallback(Future<dynamic> future) {
     final cachedError = _errors[future];
     if (cachedError != null) {
       throw cachedError;
@@ -118,7 +110,7 @@ class AsyncZoneProviderElement extends InheritedElement
       WidgetsBinding.instance.addPostFrameCallback((_) => markNeedsBuild());
     }
 
-    _tasks[future] = freeze;
+    _tasks.add(future);
     future
         .onError((error, _) {
           _errors[future] = error;
@@ -126,7 +118,7 @@ class AsyncZoneProviderElement extends InheritedElement
         .whenComplete(() {
           // Skip if already superseded: remove returns null when the entry
           // is no longer tracked, short-circuiting the rebuild.
-          if (_tasks.remove(future) != null && _tasks.isEmpty && mounted) {
+          if (_tasks.remove(future) && _tasks.isEmpty && mounted) {
             markNeedsBuild();
           }
         });
