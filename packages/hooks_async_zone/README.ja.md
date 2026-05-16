@@ -135,6 +135,32 @@ HookZoneBuilder(
 )
 ```
 
+### SliverHookZoneWidget / SliverStatefulHookZoneWidget / SliverHookZoneBuilder
+
+上記の sliver 版。suspend する hooks 利用 widget を `CustomScrollView` の直下に置きたい場合に使用：
+
+```dart
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: CustomScrollView(
+    slivers: [
+      SliverHookZoneBuilder(
+        builder: (context) {
+          final future = useMemoized(fetchItems);
+          final items = useAsyncZone().use(future);
+          return SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) => Text(items[i]),
+          );
+        },
+      ),
+    ],
+  ),
+)
+```
+
+境界の `AsyncZone` 自体は box widget のままです。
+
 ### useAsyncZone
 
 周囲の `AsyncZone` の [`AsyncZoneScope`](../async_zone) を返す hook です。hook 自体はスコープを取得するだけで、実際の非同期消費は `zone.use(future)` で行います。`zone.use` は React の `use()` と同様に **条件分岐・ループ・早期リターンの後でも呼び出し可能** です：

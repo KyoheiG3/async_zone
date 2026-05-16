@@ -135,6 +135,32 @@ HookZoneBuilder(
 )
 ```
 
+### SliverHookZoneWidget / SliverStatefulHookZoneWidget / SliverHookZoneBuilder
+
+Sliver-shaped counterparts of the above. Use these when the suspending hook-using widget must live directly inside a `CustomScrollView`:
+
+```dart
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: CustomScrollView(
+    slivers: [
+      SliverHookZoneBuilder(
+        builder: (context) {
+          final future = useMemoized(fetchItems);
+          final items = useAsyncZone().use(future);
+          return SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) => Text(items[i]),
+          );
+        },
+      ),
+    ],
+  ),
+)
+```
+
+The surrounding `AsyncZone` stays a regular box widget.
+
 ### useAsyncZone
 
 Returns the [`AsyncZoneScope`](../async_zone) of the surrounding `AsyncZone`. The hook itself only locates the scope — the actual async consumption happens via `zone.use(future)`, which behaves like React's `use()` and **may be called inside conditionals, loops, or after early returns**:

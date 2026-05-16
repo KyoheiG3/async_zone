@@ -103,6 +103,78 @@ class _TestStatefulHookZoneWidgetState
   }
 }
 
+// Helper widgets for SliverHookZoneWidget tests
+
+class SimpleSliverHookZoneWidget extends SliverHookZoneWidget {
+  const SimpleSliverHookZoneWidget({super.key, required this.future});
+
+  final Future<String> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = useAsyncZone().use(future);
+    return SliverToBoxAdapter(child: Text(data));
+  }
+}
+
+class TestSliverHookZoneWidget extends SliverHookZoneWidget {
+  const TestSliverHookZoneWidget({super.key, required this.future});
+
+  final Future<String> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final counter = useState(0);
+    final data = useAsyncZone().use(future);
+
+    return SliverList.list(
+      children: [
+        Text('Counter: ${counter.value}'),
+        Text(data),
+        ElevatedButton(
+          onPressed: () => counter.value++,
+          child: const Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
+
+class TestStatefulSliverHookZoneWidget extends SliverStatefulHookZoneWidget {
+  const TestStatefulSliverHookZoneWidget({super.key, required this.future});
+
+  final Future<String> future;
+
+  @override
+  State<TestStatefulSliverHookZoneWidget> createState() =>
+      _TestStatefulSliverHookZoneWidgetState();
+}
+
+class _TestStatefulSliverHookZoneWidgetState
+    extends State<TestStatefulSliverHookZoneWidget> {
+  String _stateValue = 'Initial';
+
+  @override
+  Widget build(BuildContext context) {
+    final data = useAsyncZone().use(widget.future);
+
+    return SliverList.list(
+      children: [
+        Text('State: $_stateValue'),
+        Text(data),
+        ElevatedButton(
+          onPressed: () {
+            setState(() {
+              _stateValue = 'Updated';
+            });
+          },
+          child: const Text('Update'),
+        ),
+      ],
+    );
+  }
+}
+
 // Helper widgets for error handling tests
 
 class ErrorThrowingWidget extends ZoneWidget {
