@@ -43,7 +43,9 @@ lib/src/
 │   ├── zone_controller.dart # State management controller
 │   └── zone_provider.dart   # Error propagation provider
 ├── foundation/
-│   └── empty.dart           # Empty widget for placeholder
+│   ├── empty.dart           # Empty widget for placeholder (box)
+│   └── sliver_empty.dart    # Empty sliver for placeholder
+├── sliver_zone.dart         # Sliver-shaped ZoneWidget variants & mixin
 ├── zone_element.dart        # ZoneElement base
 └── zone.dart                # ZoneWidget base
 ```
@@ -127,6 +129,18 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 - Top-down propagation is blocked while frozen. Keeping the old subtree visible requires that no new widget configuration descends through the `AsyncZone`. `Listenable`-driven rebuilds inside the subtree still fire, but a suspending widget cannot update its display until the future resolves.
 - Caching layers usually solve the same UX better. Libraries such as Riverpod or fquery expose previous data and `isFetching` flags directly, with no need for build-time freezing. The freeze flag is mainly useful for Suspense-pure architectures or simple cases — see the README for an example pattern (`useFreezing`).
 
+### 5. Sliver-Shaped Variants
+
+`AsyncZone` is a box widget (its element wraps the child in `Stack`/`Visibility`), but a suspending widget may need to render a `RenderSliver` to live inside a `CustomScrollView`. Sliver-shaped variants — `SliverZoneWidget`, `SliverStatefulZoneWidget`, `SliverZoneBuilder` — return slivers from `build()` while still mixing in `ZoneElement`.
+
+**Implementation.**
+
+- `ZoneElement.emptyPlaceholder` is a protected getter, default `const Empty()`. It is returned only when an exception has been routed to a fallback this frame.
+- `SliverZoneElementMixin on ZoneElement` overrides it to `const SliverEmpty()`, a leaf `RenderSliver` with `SliverGeometry.zero`.
+- `StatelessSliverZoneElement` / `StatefulSliverZoneElement` mix in the override; external packages (e.g. `hooks_async_zone`, custom `ConsumerStatefulElement` combinations) reuse the same mixin to obtain sliver-shaped placeholders.
+
+The boundary itself stays box-shaped: any error boundary (`ErrorBoundary`, `ErrorZoneWidget`) and the enclosing `AsyncZone` are placed in box context (outside or above the `CustomScrollView`). Granular sliver-level error boundaries are not provided.
+
 ## Public API at a glance
 
 | Type                  | Role                                                                  |
@@ -136,6 +150,8 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 | `ZoneWidget`          | `StatelessWidget` whose `Element` mixes in `ZoneElement`.             |
 | `StatefulZoneWidget`  | `StatefulWidget` counterpart.                                         |
 | `ZoneBuilder`         | Convenience for inline `ZoneWidget` use without subclassing.          |
+| `SliverZoneWidget` / `SliverStatefulZoneWidget` / `SliverZoneBuilder` | Sliver-shaped counterparts of the above, for use inside `CustomScrollView`. |
+| `SliverZoneElementMixin` | `on ZoneElement` — substitutes `SliverEmpty` for the suspended placeholder; mix in when building custom sliver-shaped elements. |
 | `ErrorZoneWidget<T>`  | Custom error boundary with `getDerivedStateFromError` / `componentDidCatch`. |
 | `ErrorBoundaryMixin<T>` | Same lifecycle, mixin form for custom widget hierarchies.           |
 

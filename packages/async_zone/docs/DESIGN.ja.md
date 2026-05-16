@@ -43,7 +43,9 @@ lib/src/
 │   ├── zone_controller.dart # 状態管理コントローラー
 │   └── zone_provider.dart   # エラー伝播プロバイダー
 ├── foundation/
-│   └── empty.dart           # プレースホルダー用空ウィジェット
+│   ├── empty.dart           # プレースホルダー用空ウィジェット（box）
+│   └── sliver_empty.dart    # プレースホルダー用空 sliver
+├── sliver_zone.dart         # sliver 版 ZoneWidget と mixin
 ├── zone_element.dart        # ZoneElement基底
 └── zone.dart                # ZoneWidget基底
 ```
@@ -127,6 +129,18 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 - freeze 中は AsyncZone 配下への top-down 伝播が止まります。旧 subtree を画面に残すには、`AsyncZone` 経由で新しい widget config を降ろさない設計が必要だからです。subtree 内の `Listenable` 由来の再 build は引き続き動きますが、suspend している widget 自身は future が解決するまで表示を更新できません。
 - 実用的には、キャッシュ層の方が同じ UX をもっと柔軟に提供できます。Riverpod や fquery のようなライブラリは前回データと `isFetching` フラグを直接公開するので、build 時の freeze は不要です。freeze フラグの主な利用シーンは Suspense pure な構成や単純なケースです。利用パターンは README の `useFreezing` 例を参照してください。
 
+### 5. Sliver 版バリアント
+
+`AsyncZone` は box widget（子を `Stack`/`Visibility` で包む）ですが、suspend する widget が `CustomScrollView` の中で `RenderSliver` を返す必要があるケースがあります。sliver 版 `SliverZoneWidget` / `SliverStatefulZoneWidget` / `SliverZoneBuilder` は `build()` から sliver を返しつつ `ZoneElement` を mix in しています。
+
+**実装。**
+
+- `ZoneElement.emptyPlaceholder` は protected な getter で、デフォルトは `const Empty()`。このフレームで例外が fallback に振られた時に返されます。
+- `SliverZoneElementMixin on ZoneElement` がそれを `const SliverEmpty()`（`SliverGeometry.zero` の leaf `RenderSliver`）に差し替えます。
+- `StatelessSliverZoneElement` / `StatefulSliverZoneElement` がこの mixin を mix in しており、外部パッケージ（`hooks_async_zone` や独自の `ConsumerStatefulElement` 組み合わせなど）も同じ mixin を再利用できます。
+
+境界自体は box のままです。`ErrorBoundary` / `ErrorZoneWidget` や囲みの `AsyncZone` は box コンテキスト（`CustomScrollView` の外側もしくは上位）に配置します。sliver レベルでの粒度のエラー境界は提供していません。
+
 ## 公開 API 一覧
 
 | 型                      | 役割                                                                  |
@@ -136,6 +150,8 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 | `ZoneWidget`            | `Element` が `ZoneElement` を mixin した `StatelessWidget`。          |
 | `StatefulZoneWidget`    | 上記の `StatefulWidget` 版。                                          |
 | `ZoneBuilder`           | サブクラス化せずに `ZoneWidget` をインライン記述する便利ウィジェット。 |
+| `SliverZoneWidget` / `SliverStatefulZoneWidget` / `SliverZoneBuilder` | 上記の sliver 版。`CustomScrollView` 内に直接配置するときに使用。 |
+| `SliverZoneElementMixin` | `on ZoneElement`。suspend 中の placeholder を `SliverEmpty` に差し替える。カスタム sliver 用 element を組むときに mix in する。 |
 | `ErrorZoneWidget<T>`    | `getDerivedStateFromError` / `componentDidCatch` を持つカスタム境界。 |
 | `ErrorBoundaryMixin<T>` | 同じライフサイクルを mixin として提供（独自階層用）。                  |
 

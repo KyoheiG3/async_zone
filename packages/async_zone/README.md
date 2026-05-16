@@ -397,6 +397,19 @@ AsyncZone(
 )
 ```
 
+> **Note:** `ErrorBoundary` and `ErrorZoneWidget` are box-shaped. Place them outside the `CustomScrollView` (or above the sliver subtree); they cannot be nested directly inside the sliver list because their fallback/escalation paths render box widgets.
+
+For custom sliver-shaped elements (e.g. combining hooks or third-party packages with `ZoneElement`), mix in `SliverZoneElementMixin` alongside `ZoneElement`:
+
+```dart
+class MyCustomSliverElement extends StatelessElement
+    with SomeMixin, ZoneElement, SliverZoneElementMixin {
+  MyCustomSliverElement(super.widget);
+}
+```
+
+The mixin overrides the suspended placeholder to remain a valid sliver.
+
 ### Custom Error Zones
 
 #### Choosing between `ErrorBoundary` and `ErrorZoneWidget`

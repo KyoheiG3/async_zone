@@ -399,6 +399,19 @@ AsyncZone(
 )
 ```
 
+> **Note:** `ErrorBoundary` / `ErrorZoneWidget` は box widget です。`CustomScrollView` の外（または sliver サブツリーの上位）に置いてください。fallback と escalation 経路が box widget を返すため、sliver list の中に直接ネストすることはできません。
+
+カスタムな sliver-shaped element を作る場合（hooks や他パッケージと `ZoneElement` を組み合わせるなど）、`ZoneElement` と一緒に `SliverZoneElementMixin` を mix in します:
+
+```dart
+class MyCustomSliverElement extends StatelessElement
+    with SomeMixin, ZoneElement, SliverZoneElementMixin {
+  MyCustomSliverElement(super.widget);
+}
+```
+
+mixin が suspend 中の placeholder を sliver-shaped なものに差し替えてくれます。
+
 ### カスタムエラーゾーン
 
 #### `ErrorBoundary` と `ErrorZoneWidget` の使い分け
