@@ -403,6 +403,29 @@ final post = use(postFuture); // 任意の T で使える
 - **`isPending` 相当の表示はできません。** freeze 状態が確定するのは Future が throw された **後** で、それを読みたい上流 widget はすでに古い値で build を済ませてしまっています。フェードや opacity を変えるような UX は別途自前の state（`ChangeNotifier` など）で駆動する必要があります。
 - **freeze は呼び出した widget にローカルです。** 前 subtree が画面に残るのは `use()` を呼んだ `ZoneWidget` 自身の subtree だけで、同じ `AsyncZone` 配下の兄弟 `ZoneWidget` は通常通り build され、上位からの変更（テーマ／ロケール等）も伝播します。suspend している widget 自身は future が解決するまで表示を更新できませんが、ゾーン全体を止めることはありません。この帰結として、frozen future は `allowConcurrentBuilds: false` のゲートにもカウントされません — 他の `ZoneWidget` は freeze 中でも自由に build できます。
 
+### `CustomScrollView` の中で使う
+
+suspend する widget が sliver を返したい場合は `SliverZoneWidget` / `SliverStatefulZoneWidget` / `SliverZoneBuilder` を使います。suspend 中もスロットが有効な sliver のまま保たれます。境界の `AsyncZone` 自体は box widget のままで、`CustomScrollView` をいつも通り包んで使います。
+
+```dart
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: CustomScrollView(
+    slivers: [
+      SliverZoneBuilder(
+        builder: (context) {
+          final items = AsyncZone.of(context).use(future);
+          return SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) => Text(items[i]),
+          );
+        },
+      ),
+    ],
+  ),
+)
+```
+
 ### カスタムエラーゾーン
 
 #### `ErrorBoundary` と `ErrorZoneWidget` の使い分け
@@ -564,6 +587,10 @@ AsyncZone(
   ),
 )
 ```
+
+### SliverZoneWidget / SliverStatefulZoneWidget / SliverZoneBuilder
+
+`ZoneWidget` / `StatefulZoneWidget` / `ZoneBuilder` の sliver 版。suspend する widget を `CustomScrollView` の直下に置く場合に使用します。境界の `AsyncZone` 自体は box widget のまま — [`CustomScrollView` の中で使う](#customscrollview-の中で使う) を参照。
 
 ## 他のソリューションとの比較
 

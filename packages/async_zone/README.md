@@ -402,6 +402,29 @@ The `built` ref starts `false`, so the first `use()` call falls through to the n
 - **No `isPending` indicator.** The freeze state is only confirmed *after* the future is thrown, so any widget upstream that would react to it has already built with the old value. Cross-fade or opacity dimming during freeze has to be driven by your own state (e.g. a `ChangeNotifier`).
 - **Freeze is local to the suspending widget.** Only the calling `ZoneWidget`'s own subtree is kept on screen — sibling `ZoneWidget`s under the same `AsyncZone` continue to build normally, and updates from above (theme/locale changes, etc.) still propagate. A suspending widget cannot update its display until the future resolves, but it does not block the rest of the zone. As a corollary, frozen futures do not count against `allowConcurrentBuilds: false`: other `ZoneWidget`s remain free to build even while one is frozen.
 
+### Inside `CustomScrollView`
+
+When the suspending widget needs to return a sliver, use `SliverZoneWidget` / `SliverStatefulZoneWidget` / `SliverZoneBuilder`. The slot stays a valid sliver while suspended. The surrounding `AsyncZone` is still a regular box widget — wrap the `CustomScrollView` with it as usual.
+
+```dart
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: CustomScrollView(
+    slivers: [
+      SliverZoneBuilder(
+        builder: (context) {
+          final items = AsyncZone.of(context).use(future);
+          return SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) => Text(items[i]),
+          );
+        },
+      ),
+    ],
+  ),
+)
+```
+
 ### Custom Error Zones
 
 #### Choosing between `ErrorBoundary` and `ErrorZoneWidget`
@@ -563,6 +586,10 @@ AsyncZone(
   ),
 )
 ```
+
+### SliverZoneWidget / SliverStatefulZoneWidget / SliverZoneBuilder
+
+Sliver-shaped counterparts of `ZoneWidget` / `StatefulZoneWidget` / `ZoneBuilder`. Use these when the suspending widget must live directly inside a `CustomScrollView`. The surrounding `AsyncZone` stays box-shaped — see [Inside `CustomScrollView`](#inside-customscrollview).
 
 ## Comparison with Other Solutions
 

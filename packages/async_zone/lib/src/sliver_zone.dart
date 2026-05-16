@@ -3,6 +3,28 @@ import 'package:flutter/widgets.dart';
 import 'foundation/sliver_empty.dart';
 import 'zone_element.dart';
 
+/// A mixin that swaps [ZoneElement.emptyPlaceholder] for a sliver-shaped
+/// placeholder so the element stays valid inside a [CustomScrollView] while
+/// suspended.
+///
+/// Mix this in alongside [ZoneElement] when building a custom sliver-shaped
+/// element — for example, when combining [ZoneElement] with another mixin
+/// (such as `HookElement` from `flutter_hooks`):
+///
+/// ```dart
+/// class MyHookSliverZoneElement extends StatelessElement
+///     with HookElement, ZoneElement, SliverZoneElementMixin {
+///   MyHookSliverZoneElement(super.widget);
+/// }
+/// ```
+///
+/// The [SliverEmpty] sentinel itself is not exported; mix in this mixin to
+/// adopt the sliver placeholder behaviour.
+mixin SliverZoneElementMixin on ZoneElement {
+  @override
+  Widget get emptyPlaceholder => const SliverEmpty();
+}
+
 /// An abstract base class for stateless sliver widgets with zone-based async
 /// and error handling.
 ///
@@ -45,13 +67,11 @@ abstract class SliverZoneWidget extends StatelessWidget {
 }
 
 /// An element for [SliverZoneWidget] that combines [StatelessElement] with
-/// [ZoneElement] and returns [SliverEmpty] as the suspended placeholder.
-class StatelessSliverZoneElement extends StatelessElement with ZoneElement {
+/// [ZoneElement] and [SliverZoneElementMixin].
+class StatelessSliverZoneElement extends StatelessElement
+    with ZoneElement, SliverZoneElementMixin {
   /// Creates a [StatelessSliverZoneElement] for the given [widget].
   StatelessSliverZoneElement(super.widget);
-
-  @override
-  Widget get emptyPlaceholder => const SliverEmpty();
 }
 
 /// An abstract base class for stateful sliver widgets with zone-based async
@@ -90,13 +110,11 @@ abstract class SliverStatefulZoneWidget extends StatefulWidget {
 }
 
 /// An element for [SliverStatefulZoneWidget] that combines [StatefulElement]
-/// with [ZoneElement] and returns [SliverEmpty] as the suspended placeholder.
-class StatefulSliverZoneElement extends StatefulElement with ZoneElement {
+/// with [ZoneElement] and [SliverZoneElementMixin].
+class StatefulSliverZoneElement extends StatefulElement
+    with ZoneElement, SliverZoneElementMixin {
   /// Creates a [StatefulSliverZoneElement] for the given [widget].
   StatefulSliverZoneElement(super.widget);
-
-  @override
-  Widget get emptyPlaceholder => const SliverEmpty();
 }
 
 /// A sliver widget that builds itself using a builder callback with
