@@ -1,6 +1,17 @@
 name: hooks_async_zone
-description: "A new Flutter package project."
+description: >-
+  flutter_hooks integration for async_zone. Provides HookZoneWidget and
+  useAsyncZone so you can use Suspense-style async data alongside Flutter
+  hooks.
 version: 0.0.1
+repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone
+issue_tracker: https://github.com/KyoheiG3/async_zone/issues
+topics:
+  - hooks
+  - suspense
+  - async
+  - react
+  - flutter-hooks
 
 resolution: workspace
 

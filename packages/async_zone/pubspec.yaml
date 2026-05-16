@@ -1,6 +1,17 @@
 name: async_zone
-description: "A new Flutter package project."
+description: >-
+  Declarative async and error handling for Flutter inspired by React
+  Suspense and Error Boundary. Throw futures during build to suspend the
+  surrounding AsyncZone and show its fallback.
 version: 0.0.1
+repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone
+issue_tracker: https://github.com/KyoheiG3/async_zone/issues
+topics:
+  - suspense
+  - async
+  - react
+  - fallback
+  - error-boundary
 
 resolution: workspace
 
