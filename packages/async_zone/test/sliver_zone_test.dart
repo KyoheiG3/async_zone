@@ -240,66 +240,6 @@ void main() {
       });
     });
 
-    group('given a SliverZoneWidget using use(freeze: true)', () {
-      testWidgets(
-        'should keep the previous sliver subtree on reload instead of '
-        'swapping to the fallback',
-        (tester) async {
-          // Given - first render completes
-          final firstFuture = Future.delayed(
-            const Duration(milliseconds: 50),
-            () => 'First',
-          );
-
-          await tester.pumpWidget(
-            MaterialApp(
-              home: AsyncZone(
-                fallback: const Text('Loading...'),
-                child: CustomScrollView(
-                  slivers: [SliverFreezingZoneWidget(future: firstFuture)],
-                ),
-              ),
-            ),
-          );
-          await tester.pump(const Duration(milliseconds: 50));
-          expect(find.text('First'), findsOneWidget);
-
-          // When - rebuild with a new future + freeze: true
-          final secondFuture = Future.delayed(
-            const Duration(milliseconds: 100),
-            () => 'Second',
-          );
-          await tester.pumpWidget(
-            MaterialApp(
-              home: AsyncZone(
-                fallback: const Text('Loading...'),
-                child: CustomScrollView(
-                  slivers: [
-                    SliverFreezingZoneWidget(
-                      future: secondFuture,
-                      freeze: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-
-          // Then - previous sliver subtree retained, no fallback flash
-          expect(find.text('Loading...'), findsNothing);
-          expect(find.text('First'), findsOneWidget);
-          expect(find.text('Second'), findsNothing);
-
-          // When - the second future completes
-          await tester.pump(const Duration(milliseconds: 100));
-
-          // Then - new content replaces the previous sliver
-          expect(find.text('First'), findsNothing);
-          expect(find.text('Second'), findsOneWidget);
-        },
-      );
-    });
-
     group('given a nested AsyncZone with a sliver leaf inside', () {
       testWidgets(
         'should show only the inner fallback when the sliver leaf suspends',

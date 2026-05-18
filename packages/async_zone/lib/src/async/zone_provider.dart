@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-import 'frozen_future.dart';
 import 'zone_scope.dart';
 
 /// An [InheritedWidget] that provides async zone functionality to descendant widgets.
@@ -125,7 +124,7 @@ class AsyncZoneProviderElement extends InheritedElement
   }
 
   @override
-  void supersedeFuture(Future<dynamic> future) {
+  void supersede(Future<dynamic> future) {
     _tasks.remove(future);
   }
 
@@ -139,7 +138,7 @@ class AsyncZoneProviderElement extends InheritedElement
   /// with the same future instance will return the cached value without
   /// triggering async handling again.
   @override
-  T use<T>(Future<T> future, {bool freeze = false}) {
+  T use<T>(Future<T> future) {
     final cached = _cache[future];
     if (cached != null) {
       return cached.value as T;
@@ -153,7 +152,7 @@ class AsyncZoneProviderElement extends InheritedElement
           // Do nothing
         });
 
-    throw freeze ? FrozenFuture(future) : future;
+    throw future;
   }
 
   @override

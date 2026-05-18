@@ -9,6 +9,7 @@ React の Suspense と Error Boundary にインスパイアされた、宣言的
 - 🔄 **AsyncZone**: 自動フォールバック UI を備えた宣言的な非同期処理
 - 🛡️ **ErrorZoneWidget**: React ライクなライフサイクルメソッドを持つカスタムエラーハンドリング
 - 🎯 **ZoneWidget**: 非同期処理とエラーハンドリングのシームレスな統合
+- 🔀 **TransitionZoneWidget**: 新しい subtree が suspend している間も前回の UI を残す `useTransition` ライクな状態更新
 - 🚀 **シンプルな API**: 最小限のボイラープレートで強力な機能
 - ⚡ **パフォーマンス**: 効率的なキャッシングとリビルド最適化
 
@@ -313,6 +314,66 @@ AsyncZone(                          // outer
 **外側のゾーンに対して** suspend させたい場合は、suspend する側を内側
 `AsyncZone` の上に持ち上げてください。
 
+### Transition（useTransition ライク）
+
+`TransitionZoneWidget` を使うと、状態更新で suspend が発生しても囲みの `AsyncZone` の fallback がチラっと出ません。React の `useTransition` 相当です。transition 進行中は前回の subtree が画面に残ったまま、`isPending` が suspend した Future を最初に追跡するフレームと同じフレームで `true` になります。
+
+```dart
+class ProfileSwitcher extends StatefulWidget {
+  const ProfileSwitcher({super.key});
+
+  @override
+  State<ProfileSwitcher> createState() => _ProfileSwitcherState();
+}
+
+class _ProfileSwitcherState extends State<ProfileSwitcher> {
+  int _id = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return AsyncZone(
+      fallback: const CircularProgressIndicator(),
+      child: TransitionZoneBuilder(
+        builder: (context) {
+          final scope = TransitionZone.of(context);
+          return Column(children: [
+            ProfileCard(userId: _id), // 取得中に suspend する ZoneWidget
+            ElevatedButton(
+              onPressed: () =>
+                  scope.startTransition(() => setState(() => _id++)),
+              child: Text(scope.isPending ? '読み込み中…' : '次へ'),
+            ),
+          ]);
+        },
+      ),
+    );
+  }
+}
+```
+
+`TransitionZone.of(context)` は `TransitionZoneWidget` の `build`（または `TransitionZoneBuilder` の builder）の中で呼ぶ必要があります。descendant の context から呼ぶと例外になるので、深い場所で使う場合は外側の `build` で取得して下位に受け渡してください。
+
+`action` 自体が `Future` を返した場合、`startTransition` はそれを自動で track します。これにより `compute()` などの明示的な非同期処理の間、suspend する `ZoneWidget` がなくても `isPending` を true に保てます：
+
+```dart
+scope.startTransition(() async {
+  final data = await api.fetchUser(id);
+  final result = await compute(_expensiveTransform, data);
+  setState(() => _data = result);
+});
+```
+
+**挙動のメモ:**
+
+- `isPending` は実際に suspend が発生したときだけ立ちます — descendant の `ZoneWidget` が何も throw しない no-op transition は flicker なしで静かに終わります。
+- 同じ target を連打した場合、descendant の `ZoneWidget` が次のビルドで自動 supersede するので、`isPending` は最新の work を反映します（重なってる呼び出しの和集合ではない）。Future 自体はキャンセルされません — *ライフサイクルと unmount 時の挙動* を参照。
+- Async action の Future（`action` が `Future` を返す場合）は **supersede されず merge** されます — 重なる `startTransition` 呼び出しは両方とも track され、両方が resolve するまで `isPending` は true のままです。in-flight な async work のキャンセルは呼び出し側の責任です。
+- Flutter のレンダラは同期的なので、render の中断機能や `useDeferredValue` 相当はありません — 重い CPU work は `compute()` / `Isolate.run` でオフロードし、deferred-value 的な挙動は `useEffect` + `useState` で組んでください。
+
+> hooks（`useState` など）と transition scope を一つの widget に同居させたい場合は、[hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) パッケージの `HookTransitionZoneWidget` を参照。
+
+> **フレッシュマウントでは fallback に倒れる。** suspend する element に過去の commit 済みビルドがない場合（リトライ直後に子供に戻ったばかりの `ErrorBoundary`、新規挿入されたルートなど）、その element に対して transition は延長されません。suspend した Future は通常の Suspense として囲みの `AsyncZone` の fallback に振り分けられます。
+
 ### ライフサイクルと unmount 時の挙動
 
 実アプリで動かしたときに気になりそうな点：
@@ -331,50 +392,6 @@ AsyncZone(                          // outer
   時に初期化された `late final _future = fetchData()` は hot reload では再
   実行されないため、fetcher の中身を変えたときは hot restart しないと反映
   されません。
-
-### Freeze: リロード中も前の UI を保つ（オプション）
-
-`use()` にはオプションの `freeze` フラグがあります。`true` を渡すと、新しい future が pending の間、`AsyncZone` は **fallback に切り替えるかわりに直前の subtree を画面に残し続けます**。素早く再読み込みする UX で fallback がチラつくのを避けるための「transition 風」の挙動です。
-
-> **Note:** この機能は Suspense 流のプリミティブとして用意してあるだけで、**通常のプロダクト用途には推奨しません**。実アプリでは [Riverpod](https://github.com/rrousselGit/riverpod) や [fquery](https://github.com/41y08h/fquery) のようなキャッシュライブラリの方が柔軟（stale-while-revalidate、明示的な `isFetching` フラグなど）です。Suspense の枠内に意図的に留まりたい場合のみ使ってください。
-
-#### 基本的な使い方
-
-```dart
-final data = AsyncZone.of(context).use(future, freeze: true);
-```
-
-#### 初回マウント時の注意
-
-**初回レンダリング** で `freeze: true` を渡すと、保持すべき前 subtree がまだ存在しないので、suspend 中の widget は `Empty()` を返すだけで fallback も表示されません。基本的には **初回 false、以降 true** に切り替える運用になります。
-
-それでもこの機能を使いたい場合、以下のようなヘルパーフックでパターンを切り出せます：
-
-```dart
-import 'package:flutter_hooks/flutter_hooks.dart';
-
-T Function<T>(Future<T>) useFreezing() {
-  final built = useRef(false);
-  final zone = AsyncZone.of(useContext());
-  return <T>(future) {
-    final value = zone.use(future, freeze: built.value);
-    built.value = true;
-    return value;
-  };
-}
-
-// HookZoneWidget / HookErrorZoneWidget の中で:
-final use = useFreezing();
-final user = use(userFuture);
-final post = use(postFuture); // 任意の T で使える
-```
-
-`built` は `false` で始まるので、最初の `use()` は通常の fallback 経路を通ります。その呼び出しが正常に値を返した時点で `built` が `true` になり、以降は前 UI を保持しながら新しい future の解決を待つ動作になります。
-
-#### 注意点
-
-- **`isPending` 相当の表示はできません。** freeze 状態が確定するのは Future が throw された **後** で、それを読みたい上流 widget はすでに古い値で build を済ませてしまっています。フェードや opacity を変えるような UX は別途自前の state（`ChangeNotifier` など）で駆動する必要があります。
-- **freeze は呼び出した widget にローカルです。** 前 subtree が画面に残るのは `use()` を呼んだ `ZoneWidget` 自身の subtree だけで、同じ `AsyncZone` 配下の兄弟 `ZoneWidget` は通常通り build され、上位からの変更（テーマ／ロケール等）も伝播します。suspend している widget 自身は future が解決するまで表示を更新できませんが、ゾーン全体を止めることはありません。
 
 ### `CustomScrollView` の中で使う
 
@@ -532,7 +549,7 @@ MyOuterErrorZone( // inner で扱えないエラーを処理
 
 **メソッド:**
 
-- `AsyncZone.of(context)` - `use()` 経由で future を消費するための `AsyncZoneScope` を返します。`use()` はオプションの `freeze: true` フラグを受け付けます — [Freeze](#freeze-リロード中も前の-ui-を保つオプション) を参照。
+- `AsyncZone.of(context)` - `use()` 経由で future を消費するための `AsyncZoneScope` を返します。
 
 ### ErrorZoneWidget / StatefulErrorZoneWidget
 
@@ -576,6 +593,14 @@ AsyncZone(
 ### SliverZoneWidget / SliverStatefulZoneWidget / SliverZoneBuilder
 
 `ZoneWidget` / `StatefulZoneWidget` / `ZoneBuilder` の sliver 版。suspend する widget を `CustomScrollView` の直下に置く場合に使用します。境界の `AsyncZone` 自体は box widget のまま — [`CustomScrollView` の中で使う](#customscrollview-の中で使う) を参照。
+
+### TransitionZoneWidget / TransitionZoneBuilder
+
+transition を調停するウィジェット。descendant の状態更新で suspend しても `AsyncZone` の fallback に倒さず前回の subtree を画面に残します（React `useTransition` 相当）。
+
+- transition scope を持たせる stateless widget を作る場合は `TransitionZoneWidget` を継承。インライン記述には `TransitionZoneBuilder` を使用。
+- `build`（または builder）の中で `TransitionZone.of(context)` を呼んで scope を取得します。`isPending` が進行中かどうかを示し、`startTransition(action)` で transition を起動します。`action` が `Future` を返した場合は自動で track されます。
+- 使い方は [Transition（useTransition ライク）](#transitionusetransition-ライク) を参照。
 
 ## 他のソリューションとの比較
 

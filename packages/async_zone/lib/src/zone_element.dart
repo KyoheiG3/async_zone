@@ -1,10 +1,11 @@
 import 'package:flutter/widgets.dart';
 
-import 'async/frozen_future.dart';
 import 'async/zone_provider.dart';
 import 'async/zone_scope.dart';
 import 'error/zone_provider.dart';
 import 'foundation/empty.dart';
+import 'transition/transition_provider.dart';
+import 'transition/transition_scope.dart';
 
 /// A mixin that provides zone-based async and error handling capabilities to Flutter elements.
 ///
@@ -21,6 +22,13 @@ import 'foundation/empty.dart';
 mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   final Set<Future<dynamic>> _tasks = {};
   dynamic _error;
+
+  /// Whether [super.build] has ever returned a widget for this element.
+  ///
+  /// A surrounding transition only has a prior subtree to preserve once
+  /// this is `true`. On a fresh mount we instead route the suspending
+  /// future to the [AsyncZone] fallback.
+  bool _hasCommittedBuild = false;
 
   /// Placeholder widget returned when this element cannot build its child
   /// because a thrown future or error was routed to a fallback this frame.
@@ -45,20 +53,29 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
 
     final asyncZone = AsyncZoneProvider.maybeOf(this);
     final errorZone = ErrorZoneProvider.maybeOf(this);
+    final transition = TransitionZoneProvider.maybeOf(this);
 
     // A rebuild means the widget/state has potentially changed, so any future
     // left over from a previous attempt is no longer the one we're waiting on.
     // Drop it before throwing the new one, so the provider's tracked task set
     // reflects only the futures from this build pass.
-    _supersedePendingTasks(asyncZone);
+    _supersedePendingTasks(asyncZone, transition);
 
-    void handleFuture(Future future, {bool freeze = false}) {
-      // Frozen futures stay local to this element: skipping showFallback
-      // keeps the provider's tracked task set empty so the fallback never
-      // appears, while this element's own _tasks still gates updateChild
-      // to retain the previous subtree.
-      if (asyncZone != null && !freeze) {
+    void handleFuture(Future future) {
+      // A surrounding transition wants the previous subtree kept on screen,
+      // not the AsyncZone fallback — but only when there is a previously
+      // committed build to preserve. On a fresh mount (e.g. an ErrorBoundary
+      // just swapped back to its children after a retry) there is no prior
+      // subtree, so we let the AsyncZone fallback show instead of extending
+      // the transition.
+      final inTransition = transition?.inTransition ?? false;
+      final extendTransition = inTransition && _hasCommittedBuild;
+
+      if (asyncZone != null && !extendTransition) {
         asyncZone.showFallback(future);
+      }
+      if (extendTransition) {
+        transition!.track(future);
       }
 
       void completeHandler() {
@@ -78,9 +95,9 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     }
 
     try {
-      return super.build();
-    } on FrozenFuture catch (frozen) {
-      handleFuture(frozen.inner, freeze: true);
+      final widget = super.build();
+      _hasCommittedBuild = true;
+      return widget;
     } on Future catch (future) {
       handleFuture(future);
     } catch (error, stackTrace) {
@@ -102,7 +119,10 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   void deactivate() {
     // Ancestor lookup is only safe while still active. supersede here rather
     // than in unmount so the provider can drop these tasks from its set.
-    _supersedePendingTasks(AsyncZoneProvider.maybeOf(this));
+    _supersedePendingTasks(
+      AsyncZoneProvider.maybeOf(this),
+      TransitionZoneProvider.maybeOf(this),
+    );
     super.deactivate();
   }
 
@@ -113,14 +133,17 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
     super.unmount();
   }
 
-  /// Asks [asyncZone] to drop every future this element is currently tracking,
-  /// then clears the local set. No-op when there is nothing pending.
-  void _supersedePendingTasks(AsyncZoneProviderScope? asyncZone) {
+  /// Asks [asyncZone] and [transition] to drop every future this element is
+  /// currently tracking, then clears the local set. No-op when there is
+  /// nothing pending.
+  void _supersedePendingTasks(
+    AsyncZoneProviderScope? asyncZone,
+    TransitionZoneBridge? transition,
+  ) {
     if (_tasks.isEmpty) return;
-    if (asyncZone != null) {
-      for (final future in _tasks) {
-        asyncZone.supersedeFuture(future);
-      }
+    for (final future in _tasks) {
+      asyncZone?.supersede(future);
+      transition?.supersede(future);
     }
     _tasks.clear();
   }

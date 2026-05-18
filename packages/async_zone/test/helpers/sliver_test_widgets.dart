@@ -13,23 +13,6 @@ class SliverThrowingZoneWidget extends SliverZoneWidget {
   }
 }
 
-class SliverFreezingZoneWidget extends SliverZoneWidget {
-  const SliverFreezingZoneWidget({
-    super.key,
-    required this.future,
-    this.freeze = false,
-  });
-
-  final Future<String> future;
-  final bool freeze;
-
-  @override
-  Widget build(BuildContext context) {
-    final value = AsyncZone.of(context).use(future, freeze: freeze);
-    return SliverToBoxAdapter(child: Text(value));
-  }
-}
-
 class SliverMultipleFuturesZoneWidget extends SliverZoneWidget {
   const SliverMultipleFuturesZoneWidget({
     super.key,

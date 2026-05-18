@@ -33,7 +33,6 @@ AsyncZone is a Flutter library that provides React Suspense-like async handling 
 ```
 lib/src/
 ├── async/                   # AsyncZone (Suspense) implementation
-│   ├── frozen_future.dart   # Future wrapper that signals freeze opt-in
 │   ├── zone.dart            # Public API
 │   ├── zone_provider.dart   # InheritedWidget & Element
 │   └── zone_scope.dart      # Interface definitions
@@ -45,6 +44,10 @@ lib/src/
 ├── foundation/
 │   ├── empty.dart           # Empty widget for placeholder (box)
 │   └── sliver_empty.dart    # Empty sliver for placeholder
+├── transition/                  # Transition (useTransition-like) implementation
+│   ├── transition.dart          # Public API & widgets
+│   ├── transition_provider.dart # InheritedWidget & Element mixin
+│   └── transition_scope.dart    # Scope / Bridge interfaces
 ├── sliver_zone.dart         # Sliver-shaped ZoneWidget variants & mixin
 ├── zone_element.dart        # ZoneElement base
 └── zone.dart                # ZoneWidget base
@@ -111,25 +114,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 > **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) package.
 
-### 4. Freeze Mechanism (transition-style swap)
-
-`AsyncZoneScope.use()` accepts an opt-in `freeze: true` flag. With it set, the AsyncZone keeps the previously rendered subtree on screen while the new future is pending, instead of swapping in the fallback. It is the closest Flutter equivalent to React 19's `useTransition` fallback suppression.
-
-**Why a faithful port isn't possible.** React's transition behavior relies on its **render / commit separation** — a low-priority render can keep building the new tree in the background while the previously committed UI stays on screen, and React only commits the new tree once the suspension resolves. Flutter's build phase is synchronous and tightly coupled to commit; there is no notion of "build invisibly in the background". The simplification used here is therefore: **don't try to build a new subtree at all while frozen — just block the swap.**
-
-**Implementation.**
-
-- `FrozenFuture<T>` (in `async/frozen_future.dart`) wraps a `Future<T>` and is thrown by `use()` when `freeze: true`. It implements `Future<T>` so existing `on Future catch` handlers still pick it up; `ZoneElement` distinguishes it via a more specific `on FrozenFuture catch` clause and propagates the flag down to `AsyncZoneProviderScope.showFallback(future, freeze: true)`.
-- `AsyncZoneProviderElement._tasks` is a `Map<Future, bool>` tracking the freeze flag per pending future.
-- `AsyncZoneProviderElement.updateChild` returns the existing child element (skipping `super.updateChild`) whenever any task has `freeze == true`. That short-circuit is what keeps the old UI on screen.
-
-**Limitations.**
-
-- `isPending` cannot be reflected within the same frame as the trigger. The freeze flag is set during the very build that throws the future, so any widget upstream that would react to it has already built using the old value. (React's `useTransition` avoids this by committing `isPending = true` on a higher-priority lane *before* the transition begins.)
-- Top-down propagation is blocked while frozen. Keeping the old subtree visible requires that no new widget configuration descends through the `AsyncZone`. `Listenable`-driven rebuilds inside the subtree still fire, but a suspending widget cannot update its display until the future resolves.
-- Caching layers usually solve the same UX better. Libraries such as Riverpod or fquery expose previous data and `isFetching` flags directly, with no need for build-time freezing. The freeze flag is mainly useful for Suspense-pure architectures or simple cases — see the README for an example pattern (`useFreezing`).
-
-### 5. Sliver-Shaped Variants
+### 4. Sliver-Shaped Variants
 
 `AsyncZone` is a box widget (its element wraps the child in `Stack`/`Visibility`), but a suspending widget may need to render a `RenderSliver` to live inside a `CustomScrollView`. Sliver-shaped variants — `SliverZoneWidget`, `SliverStatefulZoneWidget`, `SliverZoneBuilder` — return slivers from `build()` while still mixing in `ZoneElement`.
 
@@ -140,6 +125,18 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 - `StatelessSliverZoneElement` / `StatefulSliverZoneElement` mix in the override; external packages (e.g. `hooks_async_zone`, custom `ConsumerStatefulElement` combinations) reuse the same mixin to obtain sliver-shaped placeholders.
 
 The boundary itself stays box-shaped: any error boundary (`ErrorBoundary`, `ErrorZoneWidget`) and the enclosing `AsyncZone` are placed in box context (outside or above the `CustomScrollView`). Granular sliver-level error boundaries are not provided.
+
+### 5. Transitions (useTransition-like)
+
+`TransitionZoneWidget` mirrors React's `useTransition`: while a transition is in flight, a future thrown by a descendant is tracked by the transition rather than routed to the surrounding `AsyncZone` fallback, keeping the previous subtree visible and surfacing `isPending` in the same frame.
+
+**Implementation.**
+
+- **Bridge protocol.** `TransitionZoneBridge` decouples tracking from any specific async framework. `ZoneElement` calls `track` / `supersede` on the bridge as futures appear and are replaced (the future itself is never cancelled — only dropped from tracking). `startTransition` auto-tracks an `action` that returns a `Future`, and callers can also `track` their own futures (e.g. a `compute()` result).
+- **Two-phase rebuild.** `startTransition` runs `action` synchronously, then `performRebuild` lets descendants track their futures and — if `_tracked` diverges from the published `_isPending` — rebuilds once more so the flag is observable in the same frame. If nothing was tracked, the transition ends silently. Mirrors React's render-then-decide commit model.
+- **Fresh-mount degradation.** `ZoneElement._hasCommittedBuild` gates transition extension: while `false`, the suspending future is routed to the `AsyncZone` fallback instead — there is no prior subtree to preserve. Mirrors React's downgrade-to-Suspense behavior.
+
+`TransitionZone.of(context)` must be called with the scope-owning element's own build context; to use the scope deeper, capture it in the outer `build` and pass it down. The two-phase rebuild only reaches descendants when the trigger's rebuild chain passes through that element.
 
 ## Public API at a glance
 
@@ -154,6 +151,10 @@ The boundary itself stays box-shaped: any error boundary (`ErrorBoundary`, `Erro
 | `SliverZoneElementMixin` | `on ZoneElement` — substitutes `SliverEmpty` for the suspended placeholder; mix in when building custom sliver-shaped elements. |
 | `ErrorZoneWidget<T>`  | Custom error boundary with `getDerivedStateFromError` / `componentDidCatch`. |
 | `ErrorBoundaryMixin<T>` | Same lifecycle, mixin form for custom widget hierarchies.           |
+| `TransitionZoneWidget` / `TransitionZoneBuilder` | Widget whose surrounding element coordinates a transition (React `useTransition`-like). |
+| `TransitionZoneScope` | Returned by `TransitionZone.of(context)`; exposes `isPending` and `startTransition`. |
+| `TransitionZoneBridge` | Looked up via `TransitionZone.bridgeOf`; lets `ZoneElement` (and external trackers) extend a transition with `track` / `supersede`. |
+| `TransitionZoneElement` | Mixin `on ComponentElement` that integrates transition coordination into any element type; reused by external packages (e.g. `hooks_async_zone`). |
 
 Detailed signatures and end-user examples live in the package README — this
 document is intentionally the design counterpart, not the API reference.
@@ -237,6 +238,18 @@ To immediately reflect error state changes in the same frame.
 **With double rebuild**: Error → Fallback (same frame)
 
 This prevents visual delay when errors occur.
+
+### Q6: Why must `startTransition`'s action run synchronously?
+
+Deferring `action` would leave the next rebuild operating on stale state — e.g. an `ErrorBoundary.onReset` callback would re-render the previous errored subtree before the reset took effect, then need a second rebuild to surface the new state.
+
+### Q7: Why doesn't a transition extend over a fresh mount?
+
+Transition future-handling preserves the previous subtree, so it needs one to preserve. On a fresh mount (an `ErrorBoundary` just swapped back to children after retry, a newly inserted route) the suspending future falls through to the `AsyncZone` fallback as a normal Suspense render. `ZoneElement._hasCommittedBuild` gates this per element.
+
+### Q8: How does this compare to React's `useTransition`?
+
+Observable behavior matches (previous UI stays, `isPending` reflects in-flight work, no-suspend transitions end silently, rapid same-target updates auto-supersede). Internals differ: Flutter's renderer is synchronous, so there is no render interruptibility, no `useDeferredValue`, and async-action futures are merged rather than superseded (Dart `Future`s aren't cancelable; dropping them while side effects still run would be unsafe).
 
 ## Related Patterns
 
