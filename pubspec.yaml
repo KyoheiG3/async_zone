@@ -7,8 +7,11 @@ environment:
 
 workspace:
   - packages/async_zone
+  - packages/async_zone/example
   - packages/error_boundary
+  - packages/error_boundary/example
   - packages/hooks_async_zone
+  - packages/hooks_async_zone/example
   - examples/async_zone_sample
   - examples/fquery_sample
   - examples/riverpod_sample
