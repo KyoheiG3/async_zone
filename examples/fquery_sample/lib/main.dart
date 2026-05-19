@@ -15,7 +15,7 @@ final queryCache = QueryCache(
   defaultQueryOptions: DefaultQueryOptions(
     enabled: true,
     refetchOnMount: RefetchOnMount.stale,
-    staleDuration: Duration.zero,
+    staleDuration: const Duration(minutes: 5),
     cacheDuration: const Duration(minutes: 5),
     refetchInterval: null,
     retryCount: 0,
