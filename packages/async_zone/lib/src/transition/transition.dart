@@ -98,6 +98,46 @@ abstract class TransitionZoneWidget extends StatelessWidget {
       StatelessTransitionZoneElement(this);
 }
 
+/// A [StatefulWidget] counterpart to [TransitionZoneWidget].
+///
+/// Subclass [StatefulTransitionZoneWidget] when the widget that owns the
+/// transition scope also owns mutable state. The created element mixes in
+/// [TransitionZoneElement], so the [State]'s build context is itself a
+/// [TransitionZoneScope] and can be passed straight to [TransitionZone.of].
+///
+/// Example:
+/// ```dart
+/// class ProfileScreen extends StatefulTransitionZoneWidget {
+///   const ProfileScreen({super.key});
+///
+///   @override
+///   State<ProfileScreen> createState() => _ProfileScreenState();
+/// }
+///
+/// class _ProfileScreenState extends State<ProfileScreen> {
+///   int _userId = 1;
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     final scope = TransitionZone.of(context);
+///     return ElevatedButton(
+///       onPressed: () => scope.startTransition(() {
+///         setState(() => _userId += 1);
+///       }),
+///       child: const Text('Next'),
+///     );
+///   }
+/// }
+/// ```
+abstract class StatefulTransitionZoneWidget extends StatefulWidget {
+  /// Creates a [StatefulTransitionZoneWidget].
+  const StatefulTransitionZoneWidget({super.key});
+
+  @override
+  StatefulTransitionZoneElement createElement() =>
+      StatefulTransitionZoneElement(this);
+}
+
 /// A [TransitionZoneWidget] that builds itself using a builder callback,
 /// allowing inline use without defining a subclass.
 ///
