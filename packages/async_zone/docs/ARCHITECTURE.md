@@ -1,6 +1,6 @@
 # AsyncZone Design Specification
 
-**English** | [日本語](DESIGN.ja.md)
+**English** | [日本語](ARCHITECTURE.ja.md)
 
 ## Overview
 

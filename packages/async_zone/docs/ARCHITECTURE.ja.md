@@ -1,6 +1,6 @@
 # AsyncZone 設計仕様書
 
-[English](DESIGN.md) | **日本語**
+[English](ARCHITECTURE.md) | **日本語**
 
 ## 概要
 
