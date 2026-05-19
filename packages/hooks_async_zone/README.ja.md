@@ -62,7 +62,7 @@ AsyncZone(
 
 ## なぜ hooks_async_zone が必要？
 
-[async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) を [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) と一緒に使うには、`HookElement` と `ZoneElement` の両方を mixin したカスタム要素が必要です：
+[async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) を [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) と一緒に使うには、`HookElement` と `ZoneElement` の両方を mixin したカスタム element が必要です：
 
 ```dart
 // hooks_async_zone を使わない場合:
@@ -77,7 +77,7 @@ class ZoneHookElement extends StatelessElement with HookElement, ZoneElement {
 }
 ```
 
-`hooks_async_zone` を使えば、単に `HookZoneWidget` を使うだけです。
+`hooks_async_zone` を使えば、`HookZoneWidget` を使うだけです。
 
 ## API リファレンス
 
@@ -137,7 +137,7 @@ HookZoneBuilder(
 
 ### SliverHookZoneWidget / SliverStatefulHookZoneWidget / SliverHookZoneBuilder
 
-上記の sliver 版。suspend する hooks 利用 widget を `CustomScrollView` の直下に置きたい場合に使用：
+上記の sliver 版。suspend する hooks を使う widget を `CustomScrollView` の直下に置く必要がある場合に使用：
 
 ```dart
 AsyncZone(

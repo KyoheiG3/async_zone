@@ -36,36 +36,45 @@ flutter pub get
 
 ### AsyncZone - Handle Async Operations (inspired by React Suspense)
 
-Wrap your widget tree with `AsyncZone` and `use()` a future inside any
+Wrap your widget tree with `AsyncZone` and `use()` a future inside a
 `ZoneWidget` descendant. While the future is pending the zone shows
 `fallback` instead of `child`.
 
-#### Inline with `ZoneBuilder` (no class needed)
+#### Stateless: extend `ZoneWidget`
 
-For one-off cases, hold the future somewhere stable and consume it inside a
-`ZoneBuilder`:
+`ZoneWidget` is the `StatelessWidget` counterpart. Hold the future somewhere
+stable (here, injected as a property) so the same instance is passed across
+rebuilds:
 
 ```dart
 import 'package:async_zone/async_zone.dart';
 
+class Greeting extends ZoneWidget {
+  const Greeting({super.key, required this.future});
+
+  final Future<String> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = AsyncZone.of(context).use(future);
+    return Text(text);
+  }
+}
+
+// usage
 final greeting = Future.delayed(const Duration(seconds: 2), () => 'Hello!');
 
 AsyncZone(
   fallback: const CircularProgressIndicator(),
-  child: ZoneBuilder(
-    builder: (context) {
-      final text = AsyncZone.of(context).use(greeting);
-      return Text(text);
-    },
-  ),
+  child: Greeting(future: greeting),
 )
 ```
 
-#### Reusable widget with `StatefulZoneWidget`
+#### Stateful: extend `StatefulZoneWidget`
 
-When you need a widget that owns its future, extend `StatefulZoneWidget` and
-hold the instance in a `late final` field so the same `Future` is reused
-across rebuilds:
+`StatefulZoneWidget` is the `StatefulWidget` counterpart. When the widget
+owns its future, hold the instance in a `late final` field so the same
+`Future` is reused across rebuilds:
 
 ```dart
 class MyDataWidget extends StatefulZoneWidget {
@@ -89,6 +98,26 @@ class _MyDataWidgetState extends State<MyDataWidget> {
     return Text(data);
   }
 }
+```
+
+#### Inline alternative: `ZoneBuilder`
+
+For one-off cases where defining a class adds noise, `ZoneBuilder` consumes
+the future inline. The same rule applies — the future must be held somewhere
+stable, not constructed inside the builder:
+
+```dart
+final greeting = Future.delayed(const Duration(seconds: 2), () => 'Hello!');
+
+AsyncZone(
+  fallback: const CircularProgressIndicator(),
+  child: ZoneBuilder(
+    builder: (context) {
+      final text = AsyncZone.of(context).use(greeting);
+      return Text(text);
+    },
+  ),
+)
 ```
 
 ### ErrorZoneWidget - Custom Error Handling (inspired by React Error Boundary)
@@ -317,6 +346,8 @@ The cache (`use()` results) and the pending-task set are scoped per
 
 `TransitionZoneWidget` lets a state update suspend without flashing the surrounding `AsyncZone` fallback, mirroring React's `useTransition`. While a transition is in flight, the previous subtree stays on screen and `isPending` flips to `true` in the same frame the suspending future is first tracked.
 
+Place `TransitionZoneWidget` above `AsyncZone` and wrap only the suspending part with `AsyncZone`. The trigger sits inside the transition scope but outside the `AsyncZone`, so the fallback replaces only the suspending subtree — the button stays visible and observes `scope.isPending`:
+
 ```dart
 class ProfileSwitcher extends StatefulWidget {
   const ProfileSwitcher({super.key});
@@ -330,24 +361,54 @@ class _ProfileSwitcherState extends State<ProfileSwitcher> {
 
   @override
   Widget build(BuildContext context) {
-    return AsyncZone(
-      fallback: const CircularProgressIndicator(),
-      child: TransitionZoneBuilder(
-        builder: (context) {
-          final scope = TransitionZone.of(context);
-          return Column(children: [
-            ProfileCard(userId: _id), // a ZoneWidget that suspends on fetch
-            ElevatedButton(
-              onPressed: () =>
-                  scope.startTransition(() => setState(() => _id++)),
-              child: Text(scope.isPending ? 'Loading…' : 'Next'),
-            ),
-          ]);
-        },
-      ),
+    return _ProfileSwitcherBody(
+      id: _id,
+      onNext: () => setState(() => _id++),
     );
   }
 }
+
+class _ProfileSwitcherBody extends TransitionZoneWidget {
+  const _ProfileSwitcherBody({required this.id, required this.onNext});
+
+  final int id;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = TransitionZone.of(context);
+    return Column(children: [
+      AsyncZone(
+        fallback: const CircularProgressIndicator(),
+        child: ProfileCard(userId: id), // a ZoneWidget that suspends on fetch
+      ),
+      ElevatedButton(
+        onPressed: () => scope.startTransition(onNext),
+        child: Text(scope.isPending ? 'Loading…' : 'Next'),
+      ),
+    ]);
+  }
+}
+```
+
+For inline usage without a subclass, `TransitionZoneBuilder` exposes the same scope:
+
+```dart
+TransitionZoneBuilder(
+  builder: (context) {
+    final scope = TransitionZone.of(context);
+    return Column(children: [
+      AsyncZone(
+        fallback: const CircularProgressIndicator(),
+        child: ProfileCard(userId: id),
+      ),
+      ElevatedButton(
+        onPressed: () => scope.startTransition(onNext),
+        child: Text(scope.isPending ? 'Loading…' : 'Next'),
+      ),
+    ]);
+  },
+)
 ```
 
 `TransitionZone.of(context)` must be called inside the `build` of a `TransitionZoneWidget` (or the builder of a `TransitionZoneBuilder`). Calling from a descendant context throws — capture the scope in the outer `build` and pass it down if you need it deeper.
@@ -540,14 +601,16 @@ Check out the [example](example/) directory for complete examples including:
 
 ### AsyncZone
 
-| Property   | Type     | Description                                          |
-| ---------- | -------- | ---------------------------------------------------- |
-| `fallback` | `Widget` | Widget to display while async operations are pending |
-| `child`    | `Widget` | Main content widget                                  |
+| Property    | Type                | Description                                                                                                            |
+| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `fallback`  | `Widget`            | Widget to display while async operations are pending                                                                   |
+| `child`     | `Widget`            | Main content widget                                                                                                    |
+| `alignment` | `AlignmentGeometry` | Alignment for the internal `Stack` overlaying `fallback` on `child`. Defaults to `Alignment.center`.                   |
+| `fit`       | `StackFit`          | Sizing strategy for the internal `Stack` — defaults to `StackFit.passthrough` so incoming constraints are forwarded.   |
 
 **Methods:**
 
-- `AsyncZone.of(context)` - Returns `AsyncZoneScope` for consuming futures via `use()`.
+- `AsyncZone.of(context)` - Returns `AsyncZoneScope` for consuming futures via `use()`. Throws a `FlutterError` if no `AsyncZone` ancestor is found, or if the calling context's `Element` does not mix in `ZoneElement`.
 
 ### ErrorZoneWidget / StatefulErrorZoneWidget
 
