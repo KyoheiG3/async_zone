@@ -1,0 +1,29 @@
+name: tanstack_query_sample
+description: "Sample app demonstrating the same UX as expo-react-query-sample using tanstack_query."
+version: 1.0.0
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  async_zone:
+  hooks_async_zone:
+  error_boundary:
+  cupertino_icons: ^1.0.8
+  flutter_hooks: ^0.21.3
+  tanstack_query: ^1.2.7
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

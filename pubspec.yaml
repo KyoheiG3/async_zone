@@ -14,3 +14,4 @@ workspace:
   - examples/riverpod_sample
   - examples/sliver_zone_sample
   - examples/stateful_zone_sample
+  - examples/tanstack_query_sample
