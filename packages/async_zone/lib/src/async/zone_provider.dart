@@ -109,18 +109,19 @@ class AsyncZoneProviderElement extends InheritedElement
       WidgetsBinding.instance.addPostFrameCallback((_) => markNeedsBuild());
     }
 
-    _tasks.add(future);
-    future
-        .onError((error, _) {
-          _errors[future] = error;
-        })
-        .whenComplete(() {
-          // Skip if already superseded: remove returns null when the entry
-          // is no longer tracked, short-circuiting the rebuild.
-          if (_tasks.remove(future) && _tasks.isEmpty && mounted) {
-            markNeedsBuild();
-          }
-        });
+    if (_tasks.add(future)) {
+      future
+          .onError((error, _) {
+            _errors[future] = error;
+          })
+          .whenComplete(() {
+            // Skip if already superseded: remove returns null when the entry
+            // is no longer tracked, short-circuiting the rebuild.
+            if (_tasks.remove(future) && _tasks.isEmpty && mounted) {
+              markNeedsBuild();
+            }
+          });
+    }
   }
 
   @override
