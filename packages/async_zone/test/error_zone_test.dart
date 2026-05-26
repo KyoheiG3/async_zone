@@ -161,10 +161,7 @@ void main() {
           );
 
           await tester.pump();
-          expect(
-            find.text('Stateless Error: Initial error'),
-            findsOneWidget,
-          );
+          expect(find.text('Stateless Error: Initial error'), findsOneWidget);
 
           // When - throw button is tapped
           await tester.tap(find.text('Throw'));
@@ -275,10 +272,7 @@ void main() {
           );
 
           await tester.pump();
-          expect(
-            find.text('Stateful Error: Initial error'),
-            findsOneWidget,
-          );
+          expect(find.text('Stateful Error: Initial error'), findsOneWidget);
 
           // When - throw button is tapped
           await tester.tap(find.text('Throw'));

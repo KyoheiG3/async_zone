@@ -123,8 +123,7 @@ class _StatefulErrorZoneWidgetState extends State<TestStatefulErrorZoneWidget> {
 /// ErrorZoneWidget whose fallback is provided by a builder. Used to construct
 /// custom fallbacks (including ones that throw or that contain a throwing
 /// descendant) for nested escalation tests.
-class CustomFallbackErrorZoneWidget
-    extends ErrorZoneWidget<({Object? error})> {
+class CustomFallbackErrorZoneWidget extends ErrorZoneWidget<({Object? error})> {
   CustomFallbackErrorZoneWidget({
     super.key,
     required this.fallback,

@@ -20,9 +20,7 @@ void main() {
               home: AsyncZone(
                 fallback: const Text('Fallback'),
                 child: CustomScrollView(
-                  slivers: [
-                    SliverThrowingZoneWidget(future: future),
-                  ],
+                  slivers: [SliverThrowingZoneWidget(future: future)],
                 ),
               ),
             ),
@@ -56,9 +54,7 @@ void main() {
               home: AsyncZone(
                 fallback: const Text('Stateful Loading...'),
                 child: CustomScrollView(
-                  slivers: [
-                    SliverStatefulThrowingZoneWidget(future: future),
-                  ],
+                  slivers: [SliverStatefulThrowingZoneWidget(future: future)],
                 ),
               ),
             ),
@@ -158,47 +154,44 @@ void main() {
       );
     });
 
-    group(
-      'given a non-suspending sliver alongside a suspending sliver',
-      () {
-        testWidgets(
-          'should keep the layout valid (SliverEmpty contributes zero extent)',
-          (tester) async {
-            // Given
-            final future = Future.delayed(
-              const Duration(milliseconds: 50),
-              () => 'Resolved',
-            );
+    group('given a non-suspending sliver alongside a suspending sliver', () {
+      testWidgets(
+        'should keep the layout valid (SliverEmpty contributes zero extent)',
+        (tester) async {
+          // Given
+          final future = Future.delayed(
+            const Duration(milliseconds: 50),
+            () => 'Resolved',
+          );
 
-            await tester.pumpWidget(
-              MaterialApp(
-                home: AsyncZone(
-                  fallback: const Text('Loading'),
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverThrowingZoneWidget(future: future),
-                      const SliverToBoxAdapter(child: Text('Static below')),
-                    ],
-                  ),
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading'),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverThrowingZoneWidget(future: future),
+                    const SliverToBoxAdapter(child: Text('Static below')),
+                  ],
                 ),
               ),
-            );
+            ),
+          );
 
-            // Then - fallback covers the suspended sliver subtree.
-            // The static sliver remains in the element tree but is hidden
-            // by AsyncZone's overlay.
-            expect(find.text('Loading'), findsOneWidget);
+          // Then - fallback covers the suspended sliver subtree.
+          // The static sliver remains in the element tree but is hidden
+          // by AsyncZone's overlay.
+          expect(find.text('Loading'), findsOneWidget);
 
-            // When - future resolves
-            await tester.pump(const Duration(milliseconds: 50));
+          // When - future resolves
+          await tester.pump(const Duration(milliseconds: 50));
 
-            // Then - both slivers visible in order
-            expect(find.text('Resolved'), findsOneWidget);
-            expect(find.text('Static below'), findsOneWidget);
-          },
-        );
-      },
-    );
+          // Then - both slivers visible in order
+          expect(find.text('Resolved'), findsOneWidget);
+          expect(find.text('Static below'), findsOneWidget);
+        },
+      );
+    });
 
     group('given a SliverZoneWidget that gets a new future on rebuild', () {
       testWidgets('should supersede the old future and load the new one', (
@@ -213,7 +206,9 @@ void main() {
         Widget buildWith(Future<String> f) => MaterialApp(
           home: AsyncZone(
             fallback: const Text('Loading'),
-            child: CustomScrollView(slivers: [SliverThrowingZoneWidget(future: f)]),
+            child: CustomScrollView(
+              slivers: [SliverThrowingZoneWidget(future: f)],
+            ),
           ),
         );
 
@@ -288,58 +283,57 @@ void main() {
     });
 
     group('given a SliverZoneWidget that calls use() multiple times', () {
-      testWidgets(
-        'should suspend until every awaited future completes',
-        (tester) async {
-          // Given
-          final future1 = Future.delayed(
-            const Duration(milliseconds: 50),
-            () => 'A',
-          );
-          final future2 = Future.delayed(
-            const Duration(milliseconds: 100),
-            () => 'B',
-          );
+      testWidgets('should suspend until every awaited future completes', (
+        tester,
+      ) async {
+        // Given
+        final future1 = Future.delayed(
+          const Duration(milliseconds: 50),
+          () => 'A',
+        );
+        final future2 = Future.delayed(
+          const Duration(milliseconds: 100),
+          () => 'B',
+        );
 
-          await tester.pumpWidget(
-            MaterialApp(
-              home: AsyncZone(
-                fallback: const Text('Loading'),
-                child: CustomScrollView(
-                  slivers: [
-                    SliverMultipleFuturesZoneWidget(
-                      future1: future1,
-                      future2: future2,
-                    ),
-                  ],
-                ),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AsyncZone(
+              fallback: const Text('Loading'),
+              child: CustomScrollView(
+                slivers: [
+                  SliverMultipleFuturesZoneWidget(
+                    future1: future1,
+                    future2: future2,
+                  ),
+                ],
               ),
             ),
-          );
+          ),
+        );
 
-          // Then - fallback while either future is still pending
-          expect(find.text('Loading'), findsOneWidget);
+        // Then - fallback while either future is still pending
+        expect(find.text('Loading'), findsOneWidget);
 
-          // When - only the first future completes. A second pump lets the
-          // post-frame markNeedsBuild scheduled by the freshly-thrown
-          // future2 land before we assert.
-          await tester.pump(const Duration(milliseconds: 50));
-          await tester.pump();
+        // When - only the first future completes. A second pump lets the
+        // post-frame markNeedsBuild scheduled by the freshly-thrown
+        // future2 land before we assert.
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
 
-          // Then - still fallback (use(future2) throws on rebuild)
-          expect(find.text('Loading'), findsOneWidget);
-          expect(find.text('A'), findsNothing);
-          expect(find.text('B'), findsNothing);
+        // Then - still fallback (use(future2) throws on rebuild)
+        expect(find.text('Loading'), findsOneWidget);
+        expect(find.text('A'), findsNothing);
+        expect(find.text('B'), findsNothing);
 
-          // When - the second future completes
-          await tester.pump(const Duration(milliseconds: 50));
+        // When - the second future completes
+        await tester.pump(const Duration(milliseconds: 50));
 
-          // Then - both values rendered
-          expect(find.text('A'), findsOneWidget);
-          expect(find.text('B'), findsOneWidget);
-          expect(find.text('Loading'), findsNothing);
-        },
-      );
+        // Then - both values rendered
+        expect(find.text('A'), findsOneWidget);
+        expect(find.text('B'), findsOneWidget);
+        expect(find.text('Loading'), findsNothing);
+      });
     });
   });
 }

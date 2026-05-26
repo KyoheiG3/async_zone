@@ -109,4 +109,3 @@ class DirectThrowingZoneWidget extends ZoneWidget {
     throw future;
   }
 }
-

@@ -21,9 +21,7 @@ void main() {
             home: AsyncZone(
               fallback: const Text('Fallback'),
               child: CustomScrollView(
-                slivers: [
-                  SimpleSliverHookZoneWidget(future: future),
-                ],
+                slivers: [SimpleSliverHookZoneWidget(future: future)],
               ),
             ),
           ),
@@ -56,9 +54,7 @@ void main() {
             home: AsyncZone(
               fallback: const Text('Loading...'),
               child: CustomScrollView(
-                slivers: [
-                  TestSliverHookZoneWidget(future: future),
-                ],
+                slivers: [TestSliverHookZoneWidget(future: future)],
               ),
             ),
           ),
@@ -96,9 +92,7 @@ void main() {
             home: AsyncZone(
               fallback: const Text('Stateful loading'),
               child: CustomScrollView(
-                slivers: [
-                  TestStatefulSliverHookZoneWidget(future: future),
-                ],
+                slivers: [TestStatefulSliverHookZoneWidget(future: future)],
               ),
             ),
           ),
@@ -138,10 +132,7 @@ void main() {
                       final counter = useState(0);
                       final data = useAsyncZone().use(future);
                       return SliverList.list(
-                        children: [
-                          Text('inline ${counter.value}'),
-                          Text(data),
-                        ],
+                        children: [Text('inline ${counter.value}'), Text(data)],
                       );
                     },
                   ),

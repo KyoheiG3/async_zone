@@ -50,4 +50,3 @@ class _SliverStatefulThrowingZoneWidgetState
     return SliverToBoxAdapter(child: Text(value));
   }
 }
-

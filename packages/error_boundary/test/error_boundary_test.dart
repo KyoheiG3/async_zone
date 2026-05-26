@@ -155,8 +155,7 @@ void main() {
               setOuterState = setState;
               return ErrorBoundary(
                 resetKeys: keys,
-                builder: (context, error, reset) =>
-                    Text('Error: $error'),
+                builder: (context, error, reset) => Text('Error: $error'),
                 child: ThrowingWidget(
                   shouldThrow: keys.first == 1,
                   message: 'boom',
@@ -191,8 +190,7 @@ void main() {
               setOuterState = setState;
               return ErrorBoundary(
                 resetKeys: keys,
-                builder: (context, error, reset) =>
-                    Text('Error: $error'),
+                builder: (context, error, reset) => Text('Error: $error'),
                 child: const ThrowingWidget(message: 'boom'),
               );
             },
@@ -225,8 +223,7 @@ void main() {
               return ErrorBoundary(
                 resetKeys: keys,
                 onReset: (_) => resetCallCount++,
-                builder: (context, error, reset) =>
-                    Text('Error: $error'),
+                builder: (context, error, reset) => Text('Error: $error'),
                 child: ThrowingWidget(
                   shouldThrow: keys.first == 1,
                   message: 'boom',
@@ -250,49 +247,46 @@ void main() {
   });
 
   group('given nested ErrorBoundary', () {
-    testWidgets(
-      'showBoundary on outer from descendant escalates correctly',
-      (tester) async {
-        // Given - inner descendant explicitly delegates to outer via showBoundary.
-        // Use a Builder that captures the outer provider before the inner
-        // ErrorBoundary intercepts the context.
-        late void Function(Object error, [StackTrace? stackTrace]) outerShow;
+    testWidgets('showBoundary on outer from descendant escalates correctly', (
+      tester,
+    ) async {
+      // Given - inner descendant explicitly delegates to outer via showBoundary.
+      // Use a Builder that captures the outer provider before the inner
+      // ErrorBoundary intercepts the context.
+      late void Function(Object error, [StackTrace? stackTrace]) outerShow;
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: ErrorBoundary(
-              builder: (context, error, reset) =>
-                  Text('Outer: $error'),
-              child: Builder(
-                builder: (outerContext) {
-                  outerShow = ErrorBoundary.of(outerContext).showBoundary;
-                  return ErrorBoundary(
-                    builder: (context, error, reset) =>
-                        Text('Inner: $error'),
-                    child: Builder(
-                      builder: (innerContext) {
-                        return ElevatedButton(
-                          onPressed: () => outerShow('escalated'),
-                          child: const Text('Escalate'),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ErrorBoundary(
+            builder: (context, error, reset) => Text('Outer: $error'),
+            child: Builder(
+              builder: (outerContext) {
+                outerShow = ErrorBoundary.of(outerContext).showBoundary;
+                return ErrorBoundary(
+                  builder: (context, error, reset) => Text('Inner: $error'),
+                  child: Builder(
+                    builder: (innerContext) {
+                      return ElevatedButton(
+                        onPressed: () => outerShow('escalated'),
+                        child: const Text('Escalate'),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ),
-        );
+        ),
+      );
 
-        // When - tap escalates to outer
-        await tester.tap(find.text('Escalate'));
-        await tester.pump();
+      // When - tap escalates to outer
+      await tester.tap(find.text('Escalate'));
+      await tester.pump();
 
-        // Then - the outer boundary handles the error, inner is unaffected
-        expect(find.text('Outer: escalated'), findsOneWidget);
-        expect(find.text('Inner: escalated'), findsNothing);
-      },
-    );
+      // Then - the outer boundary handles the error, inner is unaffected
+      expect(find.text('Outer: escalated'), findsOneWidget);
+      expect(find.text('Inner: escalated'), findsNothing);
+    });
   });
 
   group('ErrorBoundary.of()', () {

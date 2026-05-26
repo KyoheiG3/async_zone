@@ -215,8 +215,9 @@ void main() {
     });
 
     group('given a Future resolving to null', () {
-      testWidgets('should transition from fallback to the null value',
-          (tester) async {
+      testWidgets('should transition from fallback to the null value', (
+        tester,
+      ) async {
         // Given
         final future = Future<String?>.delayed(
           const Duration(milliseconds: 50),
@@ -243,8 +244,9 @@ void main() {
         expect(find.text('NULL'), findsOneWidget);
       });
 
-      testWidgets('should cache the null value across use() calls',
-          (tester) async {
+      testWidgets('should cache the null value across use() calls', (
+        tester,
+      ) async {
         // Given
         var callCount = 0;
         final future = Future<String?>.delayed(
@@ -303,36 +305,32 @@ void main() {
 
     group('given a non-ZoneWidget caller inside an AsyncZone', () {
       group('when of() is called', () {
-        testWidgets(
-          'should throw FlutterError mentioning ZoneWidget',
-          (tester) async {
-            // Given - a regular StatelessWidget calls AsyncZone.of() during
-            // build while wrapped in an AsyncZone (provider exists, but the
-            // calling Element does not mix in ZoneElement)
-            await tester.pumpWidget(
-              MaterialApp(
-                home: AsyncZone(
-                  fallback: const Text('Loading...'),
-                  child: Builder(
-                    builder: (context) {
-                      AsyncZone.of(context);
-                      return const Text('Should not render');
-                    },
-                  ),
+        testWidgets('should throw FlutterError mentioning ZoneWidget', (
+          tester,
+        ) async {
+          // Given - a regular StatelessWidget calls AsyncZone.of() during
+          // build while wrapped in an AsyncZone (provider exists, but the
+          // calling Element does not mix in ZoneElement)
+          await tester.pumpWidget(
+            MaterialApp(
+              home: AsyncZone(
+                fallback: const Text('Loading...'),
+                child: Builder(
+                  builder: (context) {
+                    AsyncZone.of(context);
+                    return const Text('Should not render');
+                  },
                 ),
               ),
-            );
+            ),
+          );
 
-            // Then - should surface the dedicated ZoneWidget hint, not the
-            // opaque Future-throw error
-            final error = tester.takeException();
-            expect(error, isA<FlutterError>());
-            expect(
-              (error as FlutterError).message,
-              contains('not a ZoneWidget'),
-            );
-          },
-        );
+          // Then - should surface the dedicated ZoneWidget hint, not the
+          // opaque Future-throw error
+          final error = tester.takeException();
+          expect(error, isA<FlutterError>());
+          expect((error as FlutterError).message, contains('not a ZoneWidget'));
+        });
       });
     });
 
