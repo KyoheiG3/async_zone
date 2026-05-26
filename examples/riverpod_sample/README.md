@@ -2,35 +2,82 @@
 
 A Flutter sample app that mirrors `reference/expo-react-query-sample` (and `examples/fquery_sample`) by combining [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod) with `async_zone` (Suspense-style fallback) and `error_boundary` (error fallback).
 
-## Architecture
+## Concept mapping
 
-Two new pieces:
+- `useSuspenseQuery` → `watchOrSuspend` — a small bridge in [lib/watch_or_suspend.dart](lib/watch_or_suspend.dart) that reads a `FutureProvider`'s `AsyncValue` and:
+  - returns `data` + `AsyncData` (so callers see `isLoading` / `isRefreshing` during background refresh) when data is available,
+  - throws `error` (caught by `ErrorBoundary`) on `AsyncError`,
+  - throws `provider.future` (caught by `AsyncZone`) while `AsyncLoading`.
+- `<Suspense fallback>` → `AsyncZone(fallback: ...)`
+- `<ErrorBoundary>` → `ErrorBoundary` (from this repo)
+- `<Suspense>`-aware widget → `ConsumerZoneWidget` ([lib/consumer_zone_widget.dart](lib/consumer_zone_widget.dart))
+- `QueryClient` / `QueryClientProvider` → `ProviderContainer` / `ProviderScope`
 
-1. **`ConsumerZoneWidget`** ([lib/consumer_zone_widget.dart](lib/consumer_zone_widget.dart)) — a `ConsumerWidget` whose `Element` fuses Riverpod's `ConsumerStatefulElement` with `ZoneElement`. Same fusion pattern that `hooks_riverpod`'s `HookConsumerWidget` uses for `HookElement`, just substituting `ZoneElement`. Inside, `ref.watch` / `ref.read` / `ref.listen` work as usual, and any `Future` or error thrown during build is caught by the surrounding `AsyncZone` / `ErrorBoundary`.
-2. **`readOrSuspend`** ([lib/main.dart](lib/main.dart)) — a top-level function (not a hook) that reads the `AsyncValue` of a `FutureProvider` and translates it into:
-   - return `value` when `AsyncData`,
-   - throw `error` (caught by `ErrorBoundary`) when `AsyncError`,
-   - while `AsyncLoading`, throw a `Completer.future` that is bridged to the `ProviderContainer` via `container.listen` and resolves on the next terminal state.
+## How the pieces fit together
 
-## Why a Completer + container.listen bridge
+There are two small pieces in this sample. The first one lets a Riverpod `ConsumerWidget` participate in the zone; the second one is the Suspense bridge itself.
 
-`ref.watch`'s subscription is tied to the widget — when `AsyncZone` swaps the suspended widget out for the fallback, the `Element` unmounts and `ref.watch` is closed. `provider.future` looks like a tempting shortcut but isn't safe either: Riverpod's default retry policy keeps a single fetch's `provider.future` *pending* for the entire retry window (up to ~52s), and there are subtle cases where it doesn't reject on the first failure even with `retry: null`. To keep the bridge robust regardless of `retry` configuration, `readOrSuspend` instead subscribes to the `ProviderContainer` directly (which outlives widgets) and completes a `Completer` when the `AsyncValue` reaches `AsyncData` or `AsyncError`. The listener self-closes once it fires.
+### `ConsumerZoneWidget` — Element fusion
 
-Treating only the terminal `AsyncError` (not `AsyncLoading` mid-retry) as an error means retries — when enabled — are absorbed by the fallback as expected.
+[lib/consumer_zone_widget.dart](lib/consumer_zone_widget.dart)
 
-`FutureProvider.family` is used without `autoDispose` so the cached data survives between when the fetch completes and when `AsyncZone` rebuilds the (previously unmounted) widget.
+```dart
+abstract class ConsumerZoneWidget extends ConsumerWidget {
+  const ConsumerZoneWidget({super.key});
+
+  @override
+  _ConsumerZoneElement createElement() => _ConsumerZoneElement(this);
+}
+
+final class _ConsumerZoneElement extends ConsumerStatefulElement with ZoneElement {
+  _ConsumerZoneElement(ConsumerZoneWidget super.widget);
+}
+```
+
+This is the same fusion pattern that `hooks_riverpod`'s `HookConsumerWidget` uses to combine `HookElement` with Riverpod's `ConsumerStatefulElement` — here we substitute `ZoneElement` instead. The result is an element that:
+
+- knows how to drive `ref.watch` / `ref.read` / `ref.listen` (from `ConsumerStatefulElement`), and
+- intercepts `Future`s and errors thrown during build so `AsyncZone` / `ErrorBoundary` can catch them (from `ZoneElement`).
+
+Without this fusion, you would have to choose one or the other — using a plain `ConsumerWidget` would mean nothing catches a thrown `Future`, and using `HookZoneWidget` would mean no `ref` API.
+
+> The `flutter_riverpod` internal `ConsumerStatefulElement` is reached via `package:flutter_riverpod/src/internals.dart` because it is not part of the public API. This is the same workaround that `hooks_riverpod` uses; the `ignore: implementation_imports` comment makes the lint exception explicit.
+
+### `watchOrSuspend` — three branches
+
+[lib/watch_or_suspend.dart](lib/watch_or_suspend.dart)
+
+```dart
+({T data, AsyncData<T> asyncData}) watchOrSuspend<T>(
+  WidgetRef ref,
+  FutureProvider<T> provider,
+) {
+  final value = ref.watch(provider);
+  if (value is AsyncError<T>) throw value.error;        // → ErrorBoundary
+  if (value is AsyncData<T>) {
+    return (data: value.value, asyncData: value);       // happy path
+  }
+  throw ref.watch(provider.future);                     // → AsyncZone
+}
+```
+
+Three branches in order: error, data, otherwise suspend. A few details:
+
+- **Returning `AsyncData` alongside `data`** — `value` is narrowed to `AsyncData<T>`, which carries flags like `isLoading` and `isRefreshing`. Callers use this to render an inline spinner during a background refresh (`ref.invalidate(...)` → stale data + `isLoading: true`) while still showing the previous result. This is the Riverpod equivalent of tanstack/fquery's `query.isFetching`.
+- **`throw value.error`** — `value.error` is `Object`, so `ErrorBoundary` always receives a real error (no nullable fallback needed).
+- **`throw ref.watch(provider.future)`** — `provider.future` is a `Future<T>` exposed by Riverpod that completes when the provider transitions to a terminal `AsyncValue`. Throwing it lets the enclosing `AsyncZone` await the same completion that `ref.watch(provider)` is reactively tracking.
+
+### Why this can be so much simpler than the fquery / tanstack bridges
+
+Riverpod's `provider.future` is bound to the `ProviderContainer`, not to any one widget — it's a `Future<T>` that completes when the provider itself reaches a terminal `AsyncValue`. Throwing it gives `AsyncZone` exactly the signal it needs to clear the fallback; no external `Completer` is required.
+
+`AsyncZone` also wraps its hidden subtree in `Visibility(visible: false, maintainState: true)`, so the `ref.watch` subscription that will trigger the next rebuild (the one that returns `AsyncData`) stays alive throughout the suspend cycle.
+
+The `fquery` / `tanstack_query` samples don't have an equivalent throwable future — their `useQuery` hooks expose only a reactive `QueryResult` — so those bridges have to construct a `Completer` from cache notifications. Riverpod hands us the future for free.
 
 ## Run
 
-From the repository root:
-
 ```sh
 flutter pub get
-flutter run -d <device> --target examples/riverpod_sample/lib/main.dart
-```
-
-Or from this directory:
-
-```sh
 flutter run
 ```
