@@ -1,0 +1,31 @@
+name: transition_boundary
+description: >-
+  React-style transition boundary for async_zone. Wrap a subtree with
+  TransitionBoundary to keep its previous content visible while a new
+  asynchronous state is being prepared, instead of falling back to a loading
+  indicator.
+version: 0.0.1
+repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary
+issue_tracker: https://github.com/KyoheiG3/async_zone/issues
+topics:
+  - suspense
+  - transition
+  - async
+  - react
+  - flutter
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  async_zone:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

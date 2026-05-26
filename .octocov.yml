@@ -5,6 +5,7 @@ coverage:
     - packages/async_zone/coverage/lcov.info
     - packages/error_boundary/coverage/lcov.info
     - packages/hooks_async_zone/coverage/lcov.info
+    - packages/transition_boundary/coverage/lcov.info
 testExecutionTime:
   if: true
 diff:
