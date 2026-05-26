@@ -4,8 +4,8 @@ import 'async/zone_provider.dart';
 import 'async/zone_scope.dart';
 import 'error/zone_provider.dart';
 import 'foundation/empty.dart';
-import 'transition/transition_provider.dart';
-import 'transition/transition_scope.dart';
+import 'transition/zone_provider.dart';
+import 'transition/zone_scope.dart';
 
 /// A mixin that provides zone-based async and error handling capabilities to Flutter elements.
 ///
@@ -30,6 +30,13 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
   /// future to the [AsyncZone] fallback.
   bool _hasCommittedBuild = false;
 
+  /// Whether this element extended the surrounding transition via
+  /// `transition.track`. While `true`, [updateChild] holds the previous
+  /// subtree even after [_tasks] empties so commits wait until the
+  /// transition fully settles (React parity). Cleared when `isPending`
+  /// flips false.
+  bool _extending = false;
+
   /// Placeholder widget returned when this element cannot build its child
   /// because a thrown future or error was routed to a fallback this frame.
   ///
@@ -40,7 +47,8 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
 
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
-    return _tasks.isNotEmpty && child != null
+    final blocked = _tasks.isNotEmpty || _extending;
+    return blocked && child != null
         ? child
         : super.updateChild(child, newWidget, newSlot);
   }
@@ -53,7 +61,12 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
 
     final asyncZone = AsyncZoneProvider.maybeOf(this);
     final errorZone = ErrorZoneProvider.maybeOf(this);
-    final transition = TransitionZoneProvider.maybeOf(this);
+    // Only subscribe while extending; otherwise non-suspending
+    // [ZoneElement]s would rebuild on every [isPending] flip.
+    final transition = TransitionZoneProvider.maybeOf(this, listen: _extending);
+    if (!(transition?.isPending ?? false)) {
+      _extending = false;
+    }
 
     // A rebuild means the widget/state has potentially changed, so any future
     // left over from a previous attempt is no longer the one we're waiting on.
@@ -75,7 +88,8 @@ mixin ZoneElement on ComponentElement implements AsyncZoneCaller {
         asyncZone.showFallback(future);
       }
       if (extendTransition) {
-        transition!.track(future);
+        transition?.track(future);
+        _extending = true;
       }
 
       void completeHandler() {

@@ -9,7 +9,6 @@ A Flutter package that provides declarative async operations and error boundarie
 - 🔄 **AsyncZone**: Declarative async operations with automatic fallback UI
 - 🛡️ **ErrorZoneWidget**: Custom error handling with React-like lifecycle methods
 - 🎯 **ZoneWidget**: Seamless integration of async and error handling
-- 🔀 **TransitionZoneWidget**: `useTransition`-style state updates that keep the previous UI visible while the new one suspends
 - 🚀 **Simple API**: Minimal boilerplate with powerful capabilities
 - ⚡ **Performance**: Efficient caching and rebuild optimization
 
@@ -342,97 +341,7 @@ The cache (`use()` results) and the pending-task set are scoped per
 *against the outer* zone, lift the suspending widget above the inner
 `AsyncZone`.
 
-### Transitions (useTransition-like)
-
-`TransitionZoneWidget` lets a state update suspend without flashing the surrounding `AsyncZone` fallback, mirroring React's `useTransition`. While a transition is in flight, the previous subtree stays on screen and `isPending` flips to `true` in the same frame the suspending future is first tracked.
-
-Place `TransitionZoneWidget` above `AsyncZone` and wrap only the suspending part with `AsyncZone`. The trigger sits inside the transition scope but outside the `AsyncZone`, so the fallback replaces only the suspending subtree — the button stays visible and observes `scope.isPending`:
-
-```dart
-class ProfileSwitcher extends StatefulWidget {
-  const ProfileSwitcher({super.key});
-
-  @override
-  State<ProfileSwitcher> createState() => _ProfileSwitcherState();
-}
-
-class _ProfileSwitcherState extends State<ProfileSwitcher> {
-  int _id = 1;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ProfileSwitcherBody(
-      id: _id,
-      onNext: () => setState(() => _id++),
-    );
-  }
-}
-
-class _ProfileSwitcherBody extends TransitionZoneWidget {
-  const _ProfileSwitcherBody({required this.id, required this.onNext});
-
-  final int id;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final scope = TransitionZone.of(context);
-    return Column(children: [
-      AsyncZone(
-        fallback: const CircularProgressIndicator(),
-        child: ProfileCard(userId: id), // a ZoneWidget that suspends on fetch
-      ),
-      ElevatedButton(
-        onPressed: () => scope.startTransition(onNext),
-        child: Text(scope.isPending ? 'Loading…' : 'Next'),
-      ),
-    ]);
-  }
-}
-```
-
-For inline usage without a subclass, `TransitionZoneBuilder` exposes the same scope:
-
-```dart
-TransitionZoneBuilder(
-  builder: (context) {
-    final scope = TransitionZone.of(context);
-    return Column(children: [
-      AsyncZone(
-        fallback: const CircularProgressIndicator(),
-        child: ProfileCard(userId: id),
-      ),
-      ElevatedButton(
-        onPressed: () => scope.startTransition(onNext),
-        child: Text(scope.isPending ? 'Loading…' : 'Next'),
-      ),
-    ]);
-  },
-)
-```
-
-`TransitionZone.of(context)` must be called inside the `build` of a `TransitionZoneWidget` (or the builder of a `TransitionZoneBuilder`). Calling from a descendant context throws — capture the scope in the outer `build` and pass it down if you need it deeper.
-
-When `action` itself returns a `Future`, `startTransition` tracks it automatically. This keeps `isPending` true across explicit async work (e.g. `compute()`) without requiring a suspending `ZoneWidget`:
-
-```dart
-scope.startTransition(() async {
-  final data = await api.fetchUser(id);
-  final result = await compute(_expensiveTransform, data);
-  setState(() => _data = result);
-});
-```
-
-**Behavior notes:**
-
-- `isPending` only surfaces when an actual suspend occurs — a no-op transition (no descendant `ZoneWidget` throws) ends silently without a one-frame flicker.
-- Rapid same-target updates auto-supersede via the descendant `ZoneWidget`'s next build; `isPending` reflects the latest work, not the union of overlapping calls. (Futures themselves are not cancelled — see *Lifecycle and unmount behavior*.)
-- Async-action futures (`action` returning a `Future`) are **merged**, not superseded — overlapping `startTransition` calls keep both tracked until both resolve. Cancellation of in-flight async work is the caller's responsibility.
-- Flutter's renderer is synchronous, so there is no render interruptibility and no `useDeferredValue` equivalent — offload heavy CPU work via `compute()` / `Isolate.run`, and compose `useEffect` + `useState` for deferred-value semantics.
-
-> Combining hooks (e.g. `useState`) with a transition scope in one widget: see `HookTransitionZoneWidget` in the [hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) package.
-
-> **Fresh mount falls back.** When the suspending element has no previously committed build (an `ErrorBoundary` that just swapped back to children after retry, a freshly inserted route), the transition does not extend over it — the suspending future falls through to the surrounding `AsyncZone` fallback as a normal Suspense render.
+> **Note:** For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, check out the separate [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) package. `async_zone` only exposes the bridge interface (`TransitionZoneBridge` / `TransitionZoneProvider`) that lets external coordinators plug in.
 
 ### Lifecycle and unmount behavior
 
@@ -654,14 +563,6 @@ AsyncZone(
 ### SliverZoneWidget / SliverStatefulZoneWidget / SliverZoneBuilder
 
 Sliver-shaped counterparts of `ZoneWidget` / `StatefulZoneWidget` / `ZoneBuilder`. Use these when the suspending widget must live directly inside a `CustomScrollView`. The surrounding `AsyncZone` stays box-shaped — see [Inside `CustomScrollView`](#inside-customscrollview).
-
-### TransitionZoneWidget / TransitionZoneBuilder
-
-Coordinate a transition: a state update suspending through a descendant keeps the previous subtree on screen instead of falling back to `AsyncZone`, mirroring React's `useTransition`.
-
-- Extend `TransitionZoneWidget` for a stateless widget that hosts the transition scope, or use `TransitionZoneBuilder` inline.
-- Call `TransitionZone.of(context)` from the widget's `build` (or the builder) to obtain the scope; `isPending` reflects the in-flight state and `startTransition(action)` triggers a transition. When `action` returns a `Future`, it is auto-tracked.
-- See [Transitions (useTransition-like)](#transitions-usetransition-like) for usage.
 
 ## Comparison with Other Solutions
 

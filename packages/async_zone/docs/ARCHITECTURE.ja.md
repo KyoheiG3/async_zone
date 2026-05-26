@@ -44,10 +44,9 @@ lib/src/
 ├── foundation/
 │   ├── empty.dart           # プレースホルダー用空ウィジェット（box）
 │   └── sliver_empty.dart    # プレースホルダー用空 sliver
-├── transition/                  # Transition（useTransition ライク）実装
-│   ├── transition.dart          # 公開 API とウィジェット
-│   ├── transition_provider.dart # InheritedWidget と Element mixin
-│   └── transition_scope.dart    # Scope / Bridge インターフェース
+├── transition/              # Transition 統合インターフェース（bridge のみ）
+│   ├── zone_provider.dart   # TransitionZoneProvider (InheritedWidget)
+│   └── zone_scope.dart      # TransitionZoneBridge interface
 ├── sliver_zone.dart         # sliver 版 ZoneWidget と mixin
 ├── zone_element.dart        # ZoneElement基底
 └── zone.dart                # ZoneWidget基底
@@ -126,17 +125,18 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 境界自体は box のままです。`ErrorBoundary` / `ErrorZoneWidget` や囲みの `AsyncZone` は box コンテキスト（`CustomScrollView` の外側もしくは上位）に配置します。sliver レベルの粒度のエラー境界は提供していません。
 
-### 5. Transition（useTransition ライク）
+### 5. Transition との統合
 
-`TransitionZoneWidget` は React の `useTransition` を模倣しています。transition 進行中は、descendant がスローした Future は囲みの `AsyncZone` の fallback ではなく transition によって追跡され、直前の subtree が画面に残ったまま `isPending` が同じフレームに反映されます。
+`transition` モジュールが公開するのは統合用のインターフェースのみです — 契約となる `TransitionZoneBridge` と、それを descendant に publish する `InheritedWidget` である `TransitionZoneProvider` の 2 つだけです。`ZoneElement` は build 中にこれらを参照し、上位に存在する transition coordinator と協調します。
 
-**実装。**
+**`ZoneElement` 側の統合。**
 
-- **Bridge プロトコル。** `TransitionZoneBridge` は追跡を特定の非同期フレームワークから切り離します。`ZoneElement` は Future の出現・差し替えに合わせて `track` / `supersede` を呼びます（Future 自体はキャンセルされず、追跡から外されるだけ）。`action` が `Future` を返した場合 `startTransition` が自動 track し、`compute()` の結果など独自の Future も呼び出し側から `track` できます。
-- **2 段階リビルド。** `startTransition` は `action` を同期実行し、`performRebuild` で descendant に Future を track させた上で、`_tracked` が公開済み `_isPending` と食い違えばもう 1 度リビルドして同フレームでフラグを表面化させます。何も track されなければ transition は静かに終了します。React の render-then-decide なコミットモデルと同じ挙動です。
-- **フレッシュマウント時のフォールバック。** `ZoneElement._hasCommittedBuild` が transition の延長を通過させるゲートです。`false` の間は保持すべき過去の subtree がないため、suspend した Future は `AsyncZone` の fallback に振り分けられます。境界に保持するものがない場合に通常の Suspense に格下げする React の挙動と一致します。
+- build 中に `ZoneElement` は `TransitionZoneProvider.maybeOf(context)` で最寄りの bridge を取得します。
+- descendant が Future をスローしたとき、`ZoneElement` は `bridge.inTransition` を参照します。`true` かつ以前に build を成功させていれば、Future を `bridge.track(future)` で transition に登録し、上位の `AsyncZone` の fallback には渡しません（直前の subtree がそのまま残ります）。
+- 古い Future が新しい Future に差し替えられた場合 (state 変更により suspend する Future が変わった場合など)、`ZoneElement` は `bridge.supersede(oldFuture)` を呼んで追跡対象から外します。Future 自体はキャンセルされず、バックグラウンドで実行が継続します。
+- `ZoneElement._hasCommittedBuild` は transition の延長を許可するゲートです。`false` の場合（フレッシュマウント時）は、保持すべき直前の subtree が存在しないため、suspend した Future は通常の Suspense として `AsyncZone` の fallback に振り分けられます。保持対象がない場合に Suspense へ downgrade する React の挙動と一致します。
 
-`TransitionZone.of(context)` は scope を持つ element 自身の build コンテキストで呼ぶ必要があります。深い場所で使う場合は外側の `build` で取得して下位に受け渡してください。2 段階リビルドはトリガーのリビルドチェーンが scope を持つ element を通過したときにのみ descendant に届きます。
+> **Note:** `async_zone` 自体は transition coordinator を提供しません。React の `useTransition` ライクに「新しい状態が suspend している間も直前の subtree を画面に残す」挙動が欲しい場合は、別パッケージの [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) を参照してください。
 
 ## 公開 API 一覧
 
@@ -151,10 +151,8 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 | `SliverZoneElementMixin` | `on ZoneElement`。suspend 中の placeholder を `SliverEmpty` に差し替える。カスタム sliver 用 element を組むときに mix in する。 |
 | `ErrorZoneWidget<T>`    | `getDerivedStateFromError` / `componentDidCatch` を持つカスタム境界。 |
 | `ErrorBoundaryMixin<T>` | 同じライフサイクルを mixin として提供（独自階層用）。                  |
-| `TransitionZoneWidget` / `TransitionZoneBuilder` | 自身の element が transition を調停するウィジェット（React `useTransition` ライク）。 |
-| `TransitionZoneScope`   | `TransitionZone.of(context)` の戻り値。`isPending` と `startTransition` を提供。 |
-| `TransitionZoneBridge`  | `TransitionZone.bridgeOf` で取得。`ZoneElement` 等の外部トラッカーが `track` / `supersede` で transition の寿命を延ばすためのインターフェース。 |
-| `TransitionZoneElement` | `on ComponentElement`。任意の element 型に transition の調停機能を組み込む mixin。外部パッケージ（`hooks_async_zone` 等）からも再利用される。 |
+| `TransitionZoneBridge`  | `ZoneElement` が transition の寿命を延ばすために呼ぶ interface (`track` / `supersede`)。`TransitionZoneProvider.maybeOf` 経由で取得。 |
+| `TransitionZoneProvider` | descendant に `TransitionZoneBridge` を publish する `InheritedWidget`。`transition_boundary` の `TransitionBoundary` 等の実装が構築する。 |
 
 シグネチャやユーザ向けサンプルは README を参照してください。本ドキュメントは
 API リファレンスではなく、設計の説明書です。
@@ -178,7 +176,7 @@ API リファレンスではなく、設計の説明書です。
 ### レンダリング最適化
 
 - **子の更新スキップ**: ローディング中の ErrorWidget フラッシュを防止（FAQ Q1 参照）
-- **ダブルリビルド**: 即座の状態反映（FAQ Q6 参照）
+- **ダブルリビルド**: 即座の状態反映（FAQ Q5 参照）
 
 ### ビルド最適化
 
@@ -239,17 +237,9 @@ setState() or markNeedsBuild() called during build
 
 これによりエラー発生時の視覚的な遅延を防ぎます。
 
-### Q6: `startTransition` の action を同期実行する理由は？
-
-`action` を遅延させると次のリビルドが古い state のまま実行されます。例えば `ErrorBoundary.onReset` のコールバックを遅延された `startTransition` 経由で呼ぶと、reset が反映される前に直前のエラー状態の subtree が再レンダリングされ、新しい state を反映するのにもう 1 回リビルドが必要になります。
-
-### Q7: transition がフレッシュマウントを延長しない理由は？
+### Q6: transition がフレッシュマウントを延長しない理由は？
 
 transition 中の Future 処理は直前の subtree を残すために機能するため、残すべきものが必要です。フレッシュマウント（リトライで子に戻ったばかりの `ErrorBoundary`、新規挿入されたルートなど）では保持するものがないので、suspend した Future は通常の Suspense として `AsyncZone` の fallback に振り分けられます。`ZoneElement._hasCommittedBuild` が element ごとのゲートです。
-
-### Q8: React の `useTransition` との比較は？
-
-観測可能な挙動は一致します（前の UI が残る、`isPending` が進行中の処理を反映、no-suspend transition は静かに終了する、同一 target の連打は auto-supersede）。一方で内部実装は異なります: Flutter のレンダラは同期的なのでレンダリングの中断機能はなく、`useDeferredValue` 相当もなく、async action の Future は supersede ではなく merge されます（Dart の `Future` はキャンセルできないため、副作用がまだ実行中の可能性がある状態で tracking から外すのは安全ではない）。
 
 ## 関連パターン
 

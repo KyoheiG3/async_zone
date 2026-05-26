@@ -44,10 +44,9 @@ lib/src/
 ├── foundation/
 │   ├── empty.dart           # Empty widget for placeholder (box)
 │   └── sliver_empty.dart    # Empty sliver for placeholder
-├── transition/                  # Transition (useTransition-like) implementation
-│   ├── transition.dart          # Public API & widgets
-│   ├── transition_provider.dart # InheritedWidget & Element mixin
-│   └── transition_scope.dart    # Scope / Bridge interfaces
+├── transition/              # Transition integration surface (bridge only)
+│   ├── zone_provider.dart   # TransitionZoneProvider (InheritedWidget)
+│   └── zone_scope.dart      # TransitionZoneBridge interface
 ├── sliver_zone.dart         # Sliver-shaped ZoneWidget variants & mixin
 ├── zone_element.dart        # ZoneElement base
 └── zone.dart                # ZoneWidget base
@@ -126,17 +125,18 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 The boundary itself stays box-shaped: any error boundary (`ErrorBoundary`, `ErrorZoneWidget`) and the enclosing `AsyncZone` are placed in box context (outside or above the `CustomScrollView`). Granular sliver-level error boundaries are not provided.
 
-### 5. Transitions (useTransition-like)
+### 5. Transition Integration
 
-`TransitionZoneWidget` mirrors React's `useTransition`: while a transition is in flight, a future thrown by a descendant is tracked by the transition rather than routed to the surrounding `AsyncZone` fallback, keeping the previous subtree visible and surfacing `isPending` in the same frame.
+The `transition` module exposes only an integration surface — `TransitionZoneBridge` (the contract) and `TransitionZoneProvider` (the `InheritedWidget` that publishes a bridge to descendants). `ZoneElement` consults these during build to coordinate with any active transition coordinator above it.
 
-**Implementation.**
+**Integration with `ZoneElement`.**
 
-- **Bridge protocol.** `TransitionZoneBridge` decouples tracking from any specific async framework. `ZoneElement` calls `track` / `supersede` on the bridge as futures appear and are replaced (the future itself is never cancelled — only dropped from tracking). `startTransition` auto-tracks an `action` that returns a `Future`, and callers can also `track` their own futures (e.g. a `compute()` result).
-- **Two-phase rebuild.** `startTransition` runs `action` synchronously, then `performRebuild` lets descendants track their futures and — if `_tracked` diverges from the published `_isPending` — rebuilds once more so the flag is observable in the same frame. If nothing was tracked, the transition ends silently. Mirrors React's render-then-decide commit model.
-- **Fresh-mount degradation.** `ZoneElement._hasCommittedBuild` gates transition extension: while `false`, the suspending future is routed to the `AsyncZone` fallback instead — there is no prior subtree to preserve. Mirrors React's downgrade-to-Suspense behavior.
+- During build, `ZoneElement` looks up the closest bridge via `TransitionZoneProvider.maybeOf(context)`.
+- When a descendant throws a future, `ZoneElement` consults `bridge.inTransition`. If `true` and a prior committed build exists, the future is forwarded to `bridge.track(future)` instead of routing to the surrounding `AsyncZone` fallback — preserving the previous subtree.
+- On future replacement (e.g. a state change swaps the suspending future before the old one resolved), `ZoneElement` calls `bridge.supersede(oldFuture)` to drop it from tracking. The future itself is never cancelled.
+- `ZoneElement._hasCommittedBuild` gates the transition extension: while `false` (fresh mount), the suspending future falls through to the `AsyncZone` fallback as a normal Suspense render — mirrors React's downgrade-to-Suspense behavior when there is no prior subtree to preserve.
 
-`TransitionZone.of(context)` must be called with the scope-owning element's own build context; to use the scope deeper, capture it in the outer `build` and pass it down. The two-phase rebuild only reaches descendants when the trigger's rebuild chain passes through that element.
+> **Note:** `async_zone` doesn't ship a transition coordinator itself. For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, see the separate [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) package.
 
 ## Public API at a glance
 
@@ -151,10 +151,8 @@ The boundary itself stays box-shaped: any error boundary (`ErrorBoundary`, `Erro
 | `SliverZoneElementMixin` | `on ZoneElement` — substitutes `SliverEmpty` for the suspended placeholder; mix in when building custom sliver-shaped elements. |
 | `ErrorZoneWidget<T>`  | Custom error boundary with `getDerivedStateFromError` / `componentDidCatch`. |
 | `ErrorBoundaryMixin<T>` | Same lifecycle, mixin form for custom widget hierarchies.           |
-| `TransitionZoneWidget` / `TransitionZoneBuilder` | Widget whose surrounding element coordinates a transition (React `useTransition`-like). |
-| `TransitionZoneScope` | Returned by `TransitionZone.of(context)`; exposes `isPending` and `startTransition`. |
-| `TransitionZoneBridge` | Looked up via `TransitionZone.bridgeOf`; lets `ZoneElement` (and external trackers) extend a transition with `track` / `supersede`. |
-| `TransitionZoneElement` | Mixin `on ComponentElement` that integrates transition coordination into any element type; reused by external packages (e.g. `hooks_async_zone`). |
+| `TransitionZoneBridge` | Interface `ZoneElement` calls to extend a transition's lifetime (`track` / `supersede`). Looked up via `TransitionZoneProvider.maybeOf`. |
+| `TransitionZoneProvider` | `InheritedWidget` that publishes a `TransitionZoneBridge` to descendants. Implementations such as `TransitionBoundary` (from the `transition_boundary` package) construct it. |
 
 Detailed signatures and end-user examples live in the package README — this
 document is intentionally the design counterpart, not the API reference.
@@ -178,7 +176,7 @@ document is intentionally the design counterpart, not the API reference.
 ### Rendering Optimization
 
 - **Skip child updates**: Prevent ErrorWidget flash during loading (see FAQ Q1)
-- **Double rebuild**: Immediate state reflection (see FAQ Q6)
+- **Double rebuild**: Immediate state reflection (see FAQ Q5)
 
 ### Build Optimization
 
@@ -239,17 +237,9 @@ To immediately reflect error state changes in the same frame.
 
 This prevents visual delay when errors occur.
 
-### Q6: Why must `startTransition`'s action run synchronously?
-
-Deferring `action` would leave the next rebuild operating on stale state — e.g. an `ErrorBoundary.onReset` callback would re-render the previous errored subtree before the reset took effect, then need a second rebuild to surface the new state.
-
-### Q7: Why doesn't a transition extend over a fresh mount?
+### Q6: Why doesn't a transition extend over a fresh mount?
 
 Transition future-handling preserves the previous subtree, so it needs one to preserve. On a fresh mount (an `ErrorBoundary` just swapped back to children after retry, a newly inserted route) the suspending future falls through to the `AsyncZone` fallback as a normal Suspense render. `ZoneElement._hasCommittedBuild` gates this per element.
-
-### Q8: How does this compare to React's `useTransition`?
-
-Observable behavior matches (previous UI stays, `isPending` reflects in-flight work, no-suspend transitions end silently, rapid same-target updates auto-supersede). Internals differ: Flutter's renderer is synchronous, so there is no render interruptibility, no `useDeferredValue`, and async-action futures are merged rather than superseded (Dart `Future`s aren't cancelable; dropping them while side effects still run would be unsafe).
 
 ## Related Patterns
 
