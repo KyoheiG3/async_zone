@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_async_zone/hooks_async_zone.dart';
 import 'package:http/http.dart' as http;
+import 'package:transition_boundary/transition_boundary.dart';
+
+TransitionZoneScope useTransitionZone() => TransitionZone.of(useContext());
 
 void main() => runApp(const App());
 
@@ -18,16 +21,14 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) => User(
     id: json['id'] as int,
-    name: json['name'] as String,
+    name: '${json['firstName']} ${json['lastName']}',
     email: json['email'] as String,
   );
 }
 
 Future<User> fetchUser(int id) async {
-  await Future.delayed(const Duration(seconds: 2));
-  final res = await http.get(
-    Uri.parse('https://jsonplaceholder.typicode.com/users/$id'),
-  );
+  await Future.delayed(const Duration(seconds: 1));
+  final res = await http.get(Uri.parse('https://dummyjson.com/users/$id'));
   if (res.statusCode != 200) {
     throw 'Failed to fetch user $id: ${res.statusCode}';
   }
@@ -42,17 +43,28 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'Suspense + use() sample',
       theme: ThemeData(useMaterial3: true),
-      home: const Scaffold(body: SafeArea(child: SamplePage())),
+      home: const Scaffold(
+        body: SafeArea(child: TransitionBoundary(child: SamplePage())),
+      ),
     );
   }
 }
 
-class SamplePage extends HookWidget {
+class SamplePage extends HookZoneWidget {
   const SamplePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final id = useState(1);
+    final userFuture = useState(useMemoized(() => fetchUser(1), const []));
+    final transition = useTransitionZone();
+
+    void loadUser(int nextId) {
+      transition.startTransition(() {
+        id.value = nextId;
+        userFuture.value = fetchUser(nextId);
+      });
+    }
 
     return Center(
       child: Padding(
@@ -66,12 +78,15 @@ class SamplePage extends HookWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             ErrorBoundary(
-              onReset: (_) => id.value = 1,
+              onReset: (_) => loadUser(1),
               builder: (context, error, reset) =>
                   _ErrorCard(error: error, onRetry: reset),
               child: AsyncZone(
-                fallback: CircularProgressIndicator(),
-                child: UserCard(id: id.value),
+                fallback: const CircularProgressIndicator(),
+                child: Opacity(
+                  opacity: transition.isPending ? 0.5 : 1.0,
+                  child: UserCard(userFuture: userFuture.value),
+                ),
               ),
             ),
             Row(
@@ -79,15 +94,21 @@ class SamplePage extends HookWidget {
               spacing: 12,
               children: [
                 FilledButton.tonal(
-                  onPressed: id.value <= 1 ? null : () => id.value -= 1,
+                  onPressed: (transition.isPending || id.value <= 1)
+                      ? null
+                      : () => loadUser(id.value - 1),
                   child: const Text('Prev'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => id.value += 1,
+                  onPressed: transition.isPending
+                      ? null
+                      : () => loadUser(id.value + 1),
                   child: const Text('Next'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => id.value = 99999,
+                  onPressed: () => transition.startTransition(() {
+                    userFuture.value = fetchUser(99999);
+                  }),
                   child: const Text('Force error'),
                 ),
               ],
@@ -100,14 +121,12 @@ class SamplePage extends HookWidget {
 }
 
 class UserCard extends HookZoneWidget {
-  const UserCard({super.key, required this.id});
+  const UserCard({super.key, required this.userFuture});
 
-  final int id;
+  final Future<User> userFuture;
 
   @override
   Widget build(BuildContext context) {
-    final reload = useState(0);
-    final userFuture = useMemoized(() => fetchUser(id), [id, reload.value]);
     final user = useAsyncZone().use(userFuture);
     return _Card(
       child: Column(
@@ -121,10 +140,6 @@ class UserCard extends HookZoneWidget {
           Text(
             'user #${user.id}',
             style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
-          ),
-          FilledButton.tonal(
-            onPressed: () => reload.value++,
-            child: const Text('Refresh'),
           ),
         ],
       ),

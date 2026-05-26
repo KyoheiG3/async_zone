@@ -4,6 +4,7 @@ import 'package:async_zone/async_zone.dart';
 import 'package:error_boundary/error_boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:transition_boundary/transition_boundary.dart';
 
 void main() => runApp(const App());
 
@@ -16,16 +17,14 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) => User(
     id: json['id'] as int,
-    name: json['name'] as String,
+    name: '${json['firstName']} ${json['lastName']}',
     email: json['email'] as String,
   );
 }
 
 Future<User> fetchUser(int id) async {
   await Future.delayed(const Duration(seconds: 2));
-  final res = await http.get(
-    Uri.parse('https://jsonplaceholder.typicode.com/users/$id'),
-  );
+  final res = await http.get(Uri.parse('https://dummyjson.com/users/$id'));
   if (res.statusCode != 200) {
     throw 'Failed to fetch user $id: ${res.statusCode}';
   }
@@ -40,7 +39,9 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'StatefulZoneWidget sample',
       theme: ThemeData(useMaterial3: true),
-      home: const Scaffold(body: SafeArea(child: SamplePage())),
+      home: const Scaffold(
+        body: SafeArea(child: TransitionBoundary(child: SamplePage())),
+      ),
     );
   }
 }
@@ -54,11 +55,20 @@ class SamplePage extends StatefulWidget {
 
 class _SamplePageState extends State<SamplePage> {
   int _id = 1;
+  Future<User> _userFuture = fetchUser(1);
 
-  void _setId(int nextId) => setState(() => _id = nextId);
+  void _loadUser(int nextId) {
+    TransitionZone.of(context).startTransition(() {
+      setState(() {
+        _id = nextId;
+        _userFuture = fetchUser(nextId);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final transition = TransitionZone.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -71,12 +81,15 @@ class _SamplePageState extends State<SamplePage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             ErrorBoundary(
-              onReset: (_) => _setId(1),
+              onReset: (_) => _loadUser(1),
               builder: (context, error, reset) =>
                   _ErrorCard(error: error, onRetry: reset),
               child: AsyncZone(
                 fallback: const CircularProgressIndicator(),
-                child: _UserCard(id: _id),
+                child: Opacity(
+                  opacity: transition.isPending ? 0.5 : 1.0,
+                  child: _UserCard(userFuture: _userFuture),
+                ),
               ),
             ),
             Row(
@@ -84,15 +97,23 @@ class _SamplePageState extends State<SamplePage> {
               spacing: 12,
               children: [
                 FilledButton.tonal(
-                  onPressed: _id <= 1 ? null : () => _setId(_id - 1),
+                  onPressed: (transition.isPending || _id <= 1)
+                      ? null
+                      : () => _loadUser(_id - 1),
                   child: const Text('Prev'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => _setId(_id + 1),
+                  onPressed: transition.isPending
+                      ? null
+                      : () => _loadUser(_id + 1),
                   child: const Text('Next'),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => _setId(99999),
+                  onPressed: () => transition.startTransition(() {
+                    setState(() {
+                      _userFuture = fetchUser(99999);
+                    });
+                  }),
                   child: const Text('Force error'),
                 ),
               ],
@@ -105,34 +126,18 @@ class _SamplePageState extends State<SamplePage> {
 }
 
 class _UserCard extends StatefulZoneWidget {
-  const _UserCard({required this.id});
+  const _UserCard({required this.userFuture});
 
-  final int id;
+  final Future<User> userFuture;
 
   @override
   State<_UserCard> createState() => _UserCardState();
 }
 
 class _UserCardState extends State<_UserCard> {
-  late Future<User> _future = fetchUser(widget.id);
-
-  @override
-  void didUpdateWidget(covariant _UserCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.id != widget.id) {
-      _future = fetchUser(widget.id);
-    }
-  }
-
-  void _refresh() {
-    setState(() {
-      _future = fetchUser(widget.id);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final user = AsyncZone.of(context).use(_future);
+    final user = AsyncZone.of(context).use(widget.userFuture);
     return _Card(
       child: Column(
         spacing: 8,
@@ -146,7 +151,6 @@ class _UserCardState extends State<_UserCard> {
             'user #${user.id}',
             style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
           ),
-          FilledButton.tonal(onPressed: _refresh, child: const Text('Refresh')),
         ],
       ),
     );

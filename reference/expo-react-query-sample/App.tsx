@@ -18,9 +18,10 @@ type User = { id: number; name: string; email: string };
 
 const fetchUser = async (id: number): Promise<User> => {
   await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate network delay
-  const res = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
+  const res = await fetch(`https://dummyjson.com/users/${id}`);
   if (!res.ok) throw new Error(`Failed to fetch user ${id}: ${res.status}`);
-  return res.json();
+  const json = await res.json();
+  return { id: json.id, name: `${json.firstName} ${json.lastName}`, email: json.email };
 };
 
 const queryClient = new QueryClient({

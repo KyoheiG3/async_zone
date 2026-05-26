@@ -34,7 +34,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) => User(
     id: json['id'] as int,
-    name: json['name'] as String,
+    name: '${json['firstName']} ${json['lastName']}',
     email: json['email'] as String,
   );
 }
@@ -48,9 +48,7 @@ class FetchUserException implements Exception {
 
 Future<User> fetchUser(int id) async {
   await Future.delayed(const Duration(seconds: 2));
-  final res = await http.get(
-    Uri.parse('https://jsonplaceholder.typicode.com/users/$id'),
-  );
+  final res = await http.get(Uri.parse('https://dummyjson.com/users/$id'));
   if (res.statusCode != 200) {
     throw FetchUserException('Failed to fetch user $id: ${res.statusCode}');
   }
