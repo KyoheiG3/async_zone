@@ -4,14 +4,9 @@
 
 A Flutter package that provides declarative error handling for widget trees, inspired by React's Error Boundary.
 
-## Features
+## Overview
 
-- 🛡️ **ErrorBoundary**: Catch and handle errors in widget trees
-- 🎯 **ZoneWidget Integration**: Seamless error handling with ZoneWidget
-- 🔄 **Reset Capability**: Recover from errors with built-in reset functionality
-- 📊 **Error Callbacks**: Log and report errors with onError callback
-- 🔑 **Reset Keys**: Automatically reset when external values change
-- 🚀 **Simple API**: Minimal boilerplate with powerful capabilities
+`ErrorBoundary` catches errors thrown anywhere in a widget subtree and renders a fallback instead of crashing. You can recover with its built-in reset, or have it reset automatically when reset keys change, and report failures through the `onError` callback. It integrates with `ZoneWidget` and keeps the API minimal.
 
 ## Installation
 

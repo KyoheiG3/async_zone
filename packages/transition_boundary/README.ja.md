@@ -4,12 +4,9 @@
 
 [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) に React の `useTransition` のような transition を提供する Flutter パッケージです。`TransitionBoundary` でサブツリーをラップしておくと、新しい非同期状態が準備されている間、囲みの `AsyncZone` の fallback にちらつくことなく、直前のコンテンツを画面に残し続けられます。
 
-## 機能
+## 概要
 
-- 🔀 **TransitionBoundary**: 新しい subtree が suspend している間も直前の UI を残す `useTransition` ライクな状態更新
-- ⏳ **isPending フラグ**: subtree の任意の場所から購読して、進行中のサブツリーを暗くしたり、ボタンの状態やラベルを切り替えたりできる
-- ⚙️ **自動 track**: `startTransition` は descendant の suspend に加え、`Future` を返す action（`compute()` など）も自動で track
-- 🪶 **シンプルな API**: 一度 `TransitionBoundary` でラップしておけば、subtree のどこからでも `TransitionZone.of(context)` でトリガーできる
+`TransitionBoundary` は、React の `useTransition` のような状態更新を Flutter で実現します。新しい状態の準備中も fallback にちらつかず、直前の UI をそのまま表示し続けられます。サブツリーを一度ラップしておけば、その中のどこからでも `TransitionZone.of(context)` で transition を開始できます。`startTransition` は descendant の suspend だけでなく `Future` を返す action（`compute()` など）も自動で track し、進行中は任意の descendant から `isPending` フラグを読み取って、サブツリーを暗くしたり、ラベルや状態を切り替えたりできます。
 
 ## インストール
 

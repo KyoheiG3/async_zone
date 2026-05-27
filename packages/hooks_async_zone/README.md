@@ -4,12 +4,9 @@
 
 A Flutter package that provides [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) integration for [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone).
 
-## Features
+## Overview
 
-- 🎣 **HookZoneWidget**: Use Flutter hooks with AsyncZone
-- 🛡️ **HookErrorZoneWidget**: Combine hooks with error boundaries
-- 🔄 **useAsyncZone**: Hook that exposes the surrounding `AsyncZoneScope`
-- 🚀 **HookZoneBuilder**: Convenience widget for inline usage
+This package bridges Flutter hooks with `async_zone`. Use `HookZoneWidget` to write hooks alongside an `AsyncZone`, or `HookErrorZoneWidget` to combine them with an error boundary. The `useAsyncZone` hook exposes the surrounding `AsyncZoneScope`, and `HookZoneBuilder` offers a convenient inline form.
 
 ## Installation
 

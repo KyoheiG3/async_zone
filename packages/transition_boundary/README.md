@@ -4,12 +4,9 @@
 
 A Flutter package that brings React `useTransition`-style transitions to [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone). Wrap a subtree with `TransitionBoundary` to keep its previous content visible while a new asynchronous state is being prepared, instead of flashing the surrounding `AsyncZone` fallback.
 
-## Features
+## Overview
 
-- 🔀 **TransitionBoundary**: `useTransition`-style state updates that keep the previous UI visible while the new one suspends
-- ⏳ **isPending flag**: Subscribe from any descendant to dim, label, or disable the in-flight subtree
-- ⚙️ **Auto-tracking**: `startTransition` automatically tracks descendant suspends *and* `Future`-returning actions (e.g. `compute()`)
-- 🪶 **Simple API**: Wrap once with `TransitionBoundary`; trigger from any descendant via `TransitionZone.of(context)`
+`TransitionBoundary` brings `useTransition`-style updates to Flutter: the previous UI stays visible while the new state suspends, instead of flashing a fallback. Wrap a subtree once, then trigger a transition from any descendant via `TransitionZone.of(context)`. `startTransition` automatically tracks both descendant suspends and `Future`-returning actions (such as `compute()`), and any descendant can read the `isPending` flag to dim, label, or disable the in-flight subtree.
 
 ## Installation
 

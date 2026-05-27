@@ -4,13 +4,9 @@
 
 A Flutter package that provides declarative async operations and error boundaries, inspired by React's Suspense and Error Boundary.
 
-## Features
+## Overview
 
-- 🔄 **AsyncZone**: Declarative async operations with automatic fallback UI
-- 🛡️ **ErrorZoneWidget**: Custom error handling with React-like lifecycle methods
-- 🎯 **ZoneWidget**: Seamless integration of async and error handling
-- 🚀 **Simple API**: Minimal boilerplate with powerful capabilities
-- ⚡ **Performance**: Efficient caching and rebuild optimization
+`AsyncZone` lets you declare async operations and render a fallback UI automatically while they resolve. `ErrorZoneWidget` handles failures with React-like lifecycle methods, and `ZoneWidget` combines the two so async work and error handling live in one place. The API stays small, and rebuilds are kept efficient through caching.
 
 ## Installation
 
