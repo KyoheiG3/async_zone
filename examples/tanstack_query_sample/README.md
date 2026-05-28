@@ -1,6 +1,6 @@
 # tanstack_query_sample
 
-A Flutter sample app that mirrors `reference/expo-react-query-sample` by combining [`tanstack_query`](https://pub.dev/packages/tanstack_query) (state management) with `async_zone` (Suspense-style fallback) and `error_boundary` (error fallback).
+A Flutter sample app that mirrors `reference/expo-react-query-sample` by combining [`tanstack_query`](https://pub.dev/packages/tanstack_query) (state management) with `async_zone` (Suspense-style fallback) and `async_error_boundary` (error fallback).
 
 ## Concept mapping
 

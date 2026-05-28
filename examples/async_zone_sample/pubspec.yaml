@@ -1,5 +1,5 @@
 name: async_zone_sample
-description: "Sample app demonstrating async_zone, hooks_async_zone, and error_boundary."
+description: "Sample app demonstrating async_zone, hooks_async_zone, and async_error_boundary."
 version: 1.0.0
 publish_to: none
 
@@ -15,7 +15,7 @@ dependencies:
   async_zone:
   hooks_async_zone:
   transition_boundary:
-  error_boundary:
+  async_error_boundary:
   cupertino_icons: ^1.0.8
   flutter_hooks: ^0.21.3
   http: ^1.6.0

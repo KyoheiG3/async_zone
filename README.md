@@ -34,16 +34,16 @@ The API surface mirrors React's, but Flutter's rendering model is not. Two archi
 | Package                                               | Description                                                                                                                                                                   |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`async_zone`](packages/async_zone)                   | Core. `AsyncZone`, `ZoneWidget` / `StatefulZoneWidget` / `SliverZoneWidget` / `ZoneBuilder`, and the `ErrorZoneWidget` lifecycle base. Everything else depends on this.       |
-| [`error_boundary`](packages/error_boundary)           | High-level `ErrorBoundary` widget — `builder(context, error, reset)`, `onError` / `onReset` callbacks, `resetKeys` auto-reset, manual `showBoundary`.                         |
+| [`async_error_boundary`](packages/async_error_boundary)           | High-level `ErrorBoundary` widget — `builder(context, error, reset)`, `onError` / `onReset` callbacks, `resetKeys` auto-reset, manual `showBoundary`.                         |
 | [`transition_boundary`](packages/transition_boundary) | React `useTransition`-style transitions. Wraps a subtree with `TransitionBoundary` so descendant suspends are absorbed without flashing the surrounding `AsyncZone` fallback. |
 | [`hooks_async_zone`](packages/hooks_async_zone)       | `flutter_hooks` integration — `HookZoneWidget`, `useAsyncZone()`, sliver/error variants. Use this if your codebase already uses hooks.                                        |
 
 ## Quick start
 
-Install the pieces you need. Most apps want at least `async_zone` + `error_boundary`:
+Install the pieces you need. Most apps want at least `async_zone` + `async_error_boundary`:
 
 ```sh
-flutter pub add async_zone error_boundary
+flutter pub add async_zone async_error_boundary
 # Optional, pick as needed:
 flutter pub add transition_boundary
 flutter pub add hooks_async_zone
@@ -53,7 +53,7 @@ Minimal example — a suspending data card with an error fallback:
 
 ```dart
 import 'package:async_zone/async_zone.dart';
-import 'package:error_boundary/error_boundary.dart';
+import 'package:async_error_boundary/async_error_boundary.dart';
 import 'package:flutter/material.dart';
 
 class UserCard extends ZoneWidget {
@@ -87,7 +87,7 @@ ErrorBoundary(
 | You want…                                                                          | Add                                                                |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Suspense + `use()` only                                                            | `async_zone`                                                       |
-| A drop-in `ErrorBoundary` widget (recommended over hand-rolling `ErrorZoneWidget`) | `async_zone` + `error_boundary`                                    |
+| A drop-in `ErrorBoundary` widget (recommended over hand-rolling `ErrorZoneWidget`) | `async_zone` + `async_error_boundary`                                    |
 | React `useTransition`-style "keep previous UI while new state suspends"            | `+ transition_boundary`                                            |
 | Already using `flutter_hooks`                                                      | `+ hooks_async_zone` (provides `HookZoneWidget`, `useAsyncZone()`) |
 

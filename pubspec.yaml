@@ -8,8 +8,8 @@ environment:
 workspace:
   - packages/async_zone
   - packages/async_zone/example
-  - packages/error_boundary
-  - packages/error_boundary/example
+  - packages/async_error_boundary
+  - packages/async_error_boundary/example
   - packages/hooks_async_zone
   - packages/hooks_async_zone/example
   - packages/transition_boundary

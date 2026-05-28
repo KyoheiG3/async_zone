@@ -1,6 +1,6 @@
 # riverpod_sample
 
-A Flutter sample app that mirrors `reference/expo-react-query-sample` (and `examples/fquery_sample`) by combining [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod) with `async_zone` (Suspense-style fallback) and `error_boundary` (error fallback).
+A Flutter sample app that mirrors `reference/expo-react-query-sample` (and `examples/fquery_sample`) by combining [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod) with `async_zone` (Suspense-style fallback) and `async_error_boundary` (error fallback).
 
 ## Concept mapping
 

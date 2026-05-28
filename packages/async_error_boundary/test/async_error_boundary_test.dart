@@ -1,4 +1,4 @@
-import 'package:error_boundary/error_boundary.dart';
+import 'package:async_error_boundary/async_error_boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

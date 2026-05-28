@@ -162,7 +162,7 @@ The scope returned by `TransitionZone.of`.
 ## Related Packages
 
 - [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) — Declarative async operations and error boundaries (exports the `TransitionZoneBridge` / `TransitionZoneProvider` interface this package implements)
-- [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) — Declarative error handling
+- [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) — Declarative error handling
 - [hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) — `flutter_hooks` integration for `async_zone`
 
 ## License

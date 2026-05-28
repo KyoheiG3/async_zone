@@ -156,7 +156,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 }
 ```
 
-> **Note:** For a simpler error boundary implementation, check out the [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) package.
+> **Note:** For a simpler error boundary implementation, check out the [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) package.
 
 ## Core Concepts
 
@@ -397,16 +397,16 @@ The mixin overrides the suspended placeholder to remain a valid sliver.
 
 #### Choosing between `ErrorBoundary` and `ErrorZoneWidget`
 
-The companion [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary)
+The companion [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary)
 package wraps `ErrorZoneWidget` into a single configurable widget
 (`ErrorBoundary`). Reach for it unless you have a specific reason to drop
 down to the lower-level API.
 
 | You want…                                                              | Use                                |
 | ---------------------------------------------------------------------- | ---------------------------------- |
-| A `builder(context, error, reset)` fallback                            | `ErrorBoundary` (error_boundary)   |
-| Auto-reset when external values change (`resetKeys`)                   | `ErrorBoundary` (error_boundary)   |
-| `onError` / `onReset` callbacks without subclassing                    | `ErrorBoundary` (error_boundary)   |
+| A `builder(context, error, reset)` fallback                            | `ErrorBoundary` (async_error_boundary)   |
+| Auto-reset when external values change (`resetKeys`)                   | `ErrorBoundary` (async_error_boundary)   |
+| `onError` / `onReset` callbacks without subclassing                    | `ErrorBoundary` (async_error_boundary)   |
 | A custom state shape beyond `(error: …)` (e.g. retry counts, error category) | `ErrorZoneWidget<T>` |
 | Mix the lifecycle into a non-`StatelessWidget` hierarchy               | `ErrorBoundaryMixin<T>` + custom `Element` |
 

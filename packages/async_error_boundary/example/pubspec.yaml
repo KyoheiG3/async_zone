@@ -1,5 +1,5 @@
-name: error_boundary_example
-description: "Minimal example for error_boundary."
+name: async_error_boundary_example
+description: "Minimal example for async_error_boundary."
 version: 1.0.0
 publish_to: none
 
@@ -13,7 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   async_zone:
-  error_boundary:
+  async_error_boundary:
 
 dev_dependencies:
   flutter_test:

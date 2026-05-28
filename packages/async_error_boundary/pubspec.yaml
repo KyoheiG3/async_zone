@@ -1,10 +1,10 @@
-name: error_boundary
+name: async_error_boundary
 description: >-
   Declarative error boundary widget for Flutter inspired by React's Error
   Boundary. Catch errors thrown by descendants and render fallback UI with
   reset support.
 version: 0.0.1
-repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary
+repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary
 issue_tracker: https://github.com/KyoheiG3/async_zone/issues
 topics:
   - error-boundary

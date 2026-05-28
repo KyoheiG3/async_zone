@@ -14,7 +14,7 @@ dependencies:
     sdk: flutter
   async_zone:
   hooks_async_zone:
-  error_boundary:
+  async_error_boundary:
   cupertino_icons: ^1.0.8
   flutter_hooks: ^0.21.3
   fquery: ^3.0.2

@@ -27,7 +27,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          for pkg in async_zone error_boundary hooks_async_zone transition_boundary; do
+          for pkg in async_zone async_error_boundary hooks_async_zone transition_boundary; do
             echo "::group::Testing $pkg"
             (cd "packages/$pkg" && flutter test --coverage)
             echo "::endgroup::"

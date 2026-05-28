@@ -1,6 +1,6 @@
 # async_zone_sample
 
-A Flutter sample app that demonstrates `async_zone`, `hooks_async_zone`, `error_boundary`, and `transition_boundary` working together — a React-style Suspense + `use()` + `useTransition` pattern, without any external state-management library.
+A Flutter sample app that demonstrates `async_zone`, `hooks_async_zone`, `async_error_boundary`, and `transition_boundary` working together — a React-style Suspense + `use()` + `useTransition` pattern, without any external state-management library.
 
 ## What it shows
 

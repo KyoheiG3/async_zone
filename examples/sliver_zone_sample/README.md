@@ -1,6 +1,6 @@
 # sliver_zone_sample
 
-A Flutter sample app that demonstrates the **sliver** flavor of `async_zone` — `SliverStatefulZoneWidget` — inside a `CustomScrollView`, together with `error_boundary` and `transition_boundary`.
+A Flutter sample app that demonstrates the **sliver** flavor of `async_zone` — `SliverStatefulZoneWidget` — inside a `CustomScrollView`, together with `async_error_boundary` and `transition_boundary`.
 
 ## What it shows
 

@@ -162,7 +162,7 @@ suspend する element に過去にコミット済みのビルドが無い場合
 ## 関連パッケージ
 
 - [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) — 宣言的な非同期処理とエラーバウンダリー（このパッケージが実装する `TransitionZoneBridge` / `TransitionZoneProvider` インターフェースを公開しています）
-- [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) — 宣言的なエラーハンドリング
+- [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) — 宣言的なエラーハンドリング
 - [hooks_async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone) — `async_zone` の `flutter_hooks` 統合
 
 ## ライセンス

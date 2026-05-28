@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:async_zone/async_zone.dart';
-import 'package:error_boundary/error_boundary.dart';
+import 'package:async_error_boundary/async_error_boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:transition_boundary/transition_boundary.dart';

@@ -184,7 +184,7 @@ final data = zone.use(future);
 ## Related Packages
 
 - [async_zone](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_zone) - Declarative async operations and error boundaries
-- [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) - Declarative error handling
+- [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) - Declarative error handling
 - [flutter_hooks](https://github.com/rrousselGit/flutter_hooks) - React hooks for Flutter
 
 ## License

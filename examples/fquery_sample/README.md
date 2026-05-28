@@ -1,6 +1,6 @@
 # fquery_sample
 
-A Flutter sample app that mirrors `reference/expo-react-query-sample` by combining [`fquery`](https://pub.dev/packages/fquery) (state management) with `async_zone` (Suspense-style fallback) and `error_boundary` (error fallback).
+A Flutter sample app that mirrors `reference/expo-react-query-sample` by combining [`fquery`](https://pub.dev/packages/fquery) (state management) with `async_zone` (Suspense-style fallback) and `async_error_boundary` (error fallback).
 
 ## Concept mapping
 

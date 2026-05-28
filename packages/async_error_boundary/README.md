@@ -1,4 +1,4 @@
-# error_boundary
+# async_error_boundary
 
 **English** | [日本語](README.ja.md)
 
@@ -11,14 +11,14 @@ A Flutter package that provides declarative error handling for widget trees, ins
 ## Installation
 
 ```bash
-flutter pub add error_boundary
+flutter pub add async_error_boundary
 ```
 
 Or add it manually to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  error_boundary:
+  async_error_boundary:
 ```
 
 Then run:
@@ -34,7 +34,7 @@ flutter pub get
 Catch errors in your widget tree and display fallback UI:
 
 ```dart
-import 'package:error_boundary/error_boundary.dart';
+import 'package:async_error_boundary/async_error_boundary.dart';
 
 ErrorBoundary(
   builder: (context, error, reset) => Column(
