@@ -1,7 +1,7 @@
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:transition_boundary/transition_boundary.dart';
 
 import 'helpers/transition_test_widgets.dart';
 

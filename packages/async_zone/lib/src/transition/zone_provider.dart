@@ -6,7 +6,7 @@ import 'zone_scope.dart';
 /// descendants.
 ///
 /// Constructed by the `TransitionBoundary` widget (from the
-/// `transition_boundary` package) to expose its bridge so `ZoneElement`
+/// `async_transition_boundary` package) to expose its bridge so `ZoneElement`
 /// instances below can extend their suspensions through the transition.
 class TransitionZoneProvider extends InheritedWidget {
   const TransitionZoneProvider({

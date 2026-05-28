@@ -1,4 +1,4 @@
-# transition_boundary
+# async_transition_boundary
 
 [English](README.md) | **日本語**
 
@@ -11,14 +11,14 @@
 ## インストール
 
 ```bash
-flutter pub add transition_boundary
+flutter pub add async_transition_boundary
 ```
 
 または、`pubspec.yaml` に手動で追加：
 
 ```yaml
 dependencies:
-  transition_boundary:
+  async_transition_boundary:
 ```
 
 その後、以下を実行：
@@ -36,7 +36,7 @@ flutter pub get
 ```dart
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter/material.dart';
-import 'package:transition_boundary/transition_boundary.dart';
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 
 class ProfileSwitcher extends StatefulWidget {
   const ProfileSwitcher({super.key});

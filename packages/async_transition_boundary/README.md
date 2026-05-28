@@ -1,4 +1,4 @@
-# transition_boundary
+# async_transition_boundary
 
 **English** | [日本語](README.ja.md)
 
@@ -11,14 +11,14 @@ A Flutter package that brings React `useTransition`-style transitions to [async_
 ## Installation
 
 ```bash
-flutter pub add transition_boundary
+flutter pub add async_transition_boundary
 ```
 
 Or add it manually to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  transition_boundary:
+  async_transition_boundary:
 ```
 
 Then run:
@@ -36,7 +36,7 @@ Typically you put `TransitionBoundary` above `AsyncZone` with the trigger betwee
 ```dart
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter/material.dart';
-import 'package:transition_boundary/transition_boundary.dart';
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 
 class ProfileSwitcher extends StatefulWidget {
   const ProfileSwitcher({super.key});

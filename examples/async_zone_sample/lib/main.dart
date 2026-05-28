@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_async_zone/hooks_async_zone.dart';
 import 'package:http/http.dart' as http;
-import 'package:transition_boundary/transition_boundary.dart';
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 
 TransitionZoneScope useTransitionZone() => TransitionZone.of(useContext());
 

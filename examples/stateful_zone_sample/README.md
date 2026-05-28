@@ -1,6 +1,6 @@
 # stateful_zone_sample
 
-A Flutter sample app that demonstrates `async_zone`, `async_error_boundary`, and `transition_boundary` working together using plain `StatefulZoneWidget` — **no `flutter_hooks` dependency**.
+A Flutter sample app that demonstrates `async_zone`, `async_error_boundary`, and `async_transition_boundary` working together using plain `StatefulZoneWidget` — **no `flutter_hooks` dependency**.
 
 ## What it shows
 

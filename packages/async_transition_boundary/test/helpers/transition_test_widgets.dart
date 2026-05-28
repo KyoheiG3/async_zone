@@ -1,6 +1,6 @@
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter/widgets.dart';
-import 'package:transition_boundary/transition_boundary.dart';
 
 /// Reads `TransitionZone.of(context).isPending` and pushes every observed
 /// value into [log], then renders a [Text] of the current value.

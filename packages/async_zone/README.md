@@ -337,7 +337,7 @@ The cache (`use()` results) and the pending-task set are scoped per
 *against the outer* zone, lift the suspending widget above the inner
 `AsyncZone`.
 
-> **Note:** For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, check out the separate [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) package. `async_zone` only exposes the bridge interface (`TransitionZoneBridge` / `TransitionZoneProvider`) that lets external coordinators plug in.
+> **Note:** For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, check out the separate [async_transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_transition_boundary) package. `async_zone` only exposes the bridge interface (`TransitionZoneBridge` / `TransitionZoneProvider`) that lets external coordinators plug in.
 
 ### Lifecycle and unmount behavior
 

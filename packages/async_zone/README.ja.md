@@ -338,7 +338,7 @@ AsyncZone(                          // outer
 **外側のゾーンに対して** suspend させたい場合は、suspend する側を内側
 `AsyncZone` の上に持ち上げてください。
 
-> **Note:** React の `useTransition` ライクに「新しい状態が suspend している間も直前の subtree を画面に残す」挙動が欲しい場合は、別パッケージの [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) を参照してください。`async_zone` 側は外部 coordinator が差し込めるよう bridge interface (`TransitionZoneBridge` / `TransitionZoneProvider`) を公開しているだけです。
+> **Note:** React の `useTransition` ライクに「新しい状態が suspend している間も直前の subtree を画面に残す」挙動が欲しい場合は、別パッケージの [async_transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_transition_boundary) を参照してください。`async_zone` 側は外部 coordinator が差し込めるよう bridge interface (`TransitionZoneBridge` / `TransitionZoneProvider`) を公開しているだけです。
 
 ### ライフサイクルと unmount 時の挙動
 

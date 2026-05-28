@@ -1,6 +1,6 @@
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 import 'package:async_zone/async_zone.dart';
 import 'package:flutter/material.dart';
-import 'package:transition_boundary/transition_boundary.dart';
 
 Future<String> fetchProfile(int id) async {
   await Future.delayed(const Duration(seconds: 1));

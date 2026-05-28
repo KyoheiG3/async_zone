@@ -12,8 +12,8 @@ workspace:
   - packages/async_error_boundary/example
   - packages/hooks_async_zone
   - packages/hooks_async_zone/example
-  - packages/transition_boundary
-  - packages/transition_boundary/example
+  - packages/async_transition_boundary
+  - packages/async_transition_boundary/example
   - examples/async_zone_sample
   - examples/fquery_sample
   - examples/riverpod_sample

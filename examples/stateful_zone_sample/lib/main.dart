@@ -4,7 +4,7 @@ import 'package:async_zone/async_zone.dart';
 import 'package:async_error_boundary/async_error_boundary.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:transition_boundary/transition_boundary.dart';
+import 'package:async_transition_boundary/async_transition_boundary.dart';
 
 void main() => runApp(const App());
 
