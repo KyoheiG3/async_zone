@@ -1,9 +1,8 @@
 name: async_transition_boundary
 description: >-
-  React-style transition boundary for async_zone. Wrap a subtree with
-  TransitionBoundary to keep its previous content visible while a new
-  asynchronous state is being prepared, instead of falling back to a loading
-  indicator.
+  React-style transition boundary for async_zone. Keep previous content
+  visible while a new async state is being prepared, instead of showing
+  a fallback.
 version: 0.1.0
 repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/async_transition_boundary
 issue_tracker: https://github.com/KyoheiG3/async_zone/issues
