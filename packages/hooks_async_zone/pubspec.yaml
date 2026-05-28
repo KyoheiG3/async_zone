@@ -3,7 +3,7 @@ description: >-
   flutter_hooks integration for async_zone. Provides HookZoneWidget and
   useAsyncZone so you can use Suspense-style async data alongside Flutter
   hooks.
-version: 0.0.1
+version: 0.1.0
 repository: https://github.com/KyoheiG3/async_zone/tree/main/packages/hooks_async_zone
 issue_tracker: https://github.com/KyoheiG3/async_zone/issues
 topics:
@@ -22,7 +22,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  async_zone:
+  async_zone: ^0.1.0
   flutter_hooks: ^0.21.2
 
 dev_dependencies:

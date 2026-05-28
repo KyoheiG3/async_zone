@@ -111,7 +111,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 **コントローラーパターン**: Widget がコントローラーを保持（一時的）、Element がアタッチ（永続的）。
 
-> **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) をご確認ください。
+> **Note:** よりシンプルなエラーバウンダリー実装については、別パッケージ [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) をご確認ください。
 
 ### 4. Sliver 版バリアント
 
@@ -136,7 +136,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 - 古い Future が新しい Future に差し替えられた場合 (state 変更により suspend する Future が変わった場合など)、`ZoneElement` は `bridge.supersede(oldFuture)` を呼んで追跡対象から外します。Future 自体はキャンセルされず、バックグラウンドで実行が継続します。
 - `ZoneElement._hasCommittedBuild` は transition の延長を許可するゲートです。`false` の場合（フレッシュマウント時）は、保持すべき直前の subtree が存在しないため、suspend した Future は通常の Suspense として `AsyncZone` の fallback に振り分けられます。保持対象がない場合に Suspense へ downgrade する React の挙動と一致します。
 
-> **Note:** `async_zone` 自体は transition coordinator を提供しません。React の `useTransition` ライクに「新しい状態が suspend している間も直前の subtree を画面に残す」挙動が欲しい場合は、別パッケージの [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) を参照してください。
+> **Note:** `async_zone` 自体は transition coordinator を提供しません。React の `useTransition` ライクに「新しい状態が suspend している間も直前の subtree を画面に残す」挙動が欲しい場合は、別パッケージの [async_transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_transition_boundary) を参照してください。
 
 ## 公開 API 一覧
 
@@ -152,7 +152,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 | `ErrorZoneWidget<T>`    | `getDerivedStateFromError` / `componentDidCatch` を持つカスタム境界。 |
 | `ErrorBoundaryMixin<T>` | 同じライフサイクルを mixin として提供（独自階層用）。                  |
 | `TransitionZoneBridge`  | `ZoneElement` が transition の寿命を延ばすために呼ぶ interface (`track` / `supersede`)。`TransitionZoneProvider.maybeOf` 経由で取得。 |
-| `TransitionZoneProvider` | descendant に `TransitionZoneBridge` を publish する `InheritedWidget`。`transition_boundary` の `TransitionBoundary` 等の実装が構築する。 |
+| `TransitionZoneProvider` | descendant に `TransitionZoneBridge` を publish する `InheritedWidget`。`async_transition_boundary` の `TransitionBoundary` 等の実装が構築する。 |
 
 シグネチャやユーザ向けサンプルは README を参照してください。本ドキュメントは
 API リファレンスではなく、設計の説明書です。

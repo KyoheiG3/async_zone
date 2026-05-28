@@ -111,7 +111,7 @@ class MyErrorZone extends ErrorZoneWidget<({Object? error})> {
 
 **Controller Pattern**: Widget holds controller (ephemeral), Element attaches to it (persistent).
 
-> **Note:** For simpler error boundary implementation, check out the separate [error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/error_boundary) package.
+> **Note:** For simpler error boundary implementation, check out the separate [async_error_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_error_boundary) package.
 
 ### 4. Sliver-Shaped Variants
 
@@ -136,7 +136,7 @@ The `transition` module exposes only an integration surface — `TransitionZoneB
 - On future replacement (e.g. a state change swaps the suspending future before the old one resolved), `ZoneElement` calls `bridge.supersede(oldFuture)` to drop it from tracking. The future itself is never cancelled.
 - `ZoneElement._hasCommittedBuild` gates the transition extension: while `false` (fresh mount), the suspending future falls through to the `AsyncZone` fallback as a normal Suspense render — mirrors React's downgrade-to-Suspense behavior when there is no prior subtree to preserve.
 
-> **Note:** `async_zone` doesn't ship a transition coordinator itself. For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, see the separate [transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/transition_boundary) package.
+> **Note:** `async_zone` doesn't ship a transition coordinator itself. For React `useTransition`-style transitions that keep the previous subtree visible while a new state suspends, see the separate [async_transition_boundary](https://github.com/KyoheiG3/async_zone/tree/main/packages/async_transition_boundary) package.
 
 ## Public API at a glance
 
@@ -152,7 +152,7 @@ The `transition` module exposes only an integration surface — `TransitionZoneB
 | `ErrorZoneWidget<T>`  | Custom error boundary with `getDerivedStateFromError` / `componentDidCatch`. |
 | `ErrorBoundaryMixin<T>` | Same lifecycle, mixin form for custom widget hierarchies.           |
 | `TransitionZoneBridge` | Interface `ZoneElement` calls to extend a transition's lifetime (`track` / `supersede`). Looked up via `TransitionZoneProvider.maybeOf`. |
-| `TransitionZoneProvider` | `InheritedWidget` that publishes a `TransitionZoneBridge` to descendants. Implementations such as `TransitionBoundary` (from the `transition_boundary` package) construct it. |
+| `TransitionZoneProvider` | `InheritedWidget` that publishes a `TransitionZoneBridge` to descendants. Implementations such as `TransitionBoundary` (from the `async_transition_boundary` package) construct it. |
 
 Detailed signatures and end-user examples live in the package README — this
 document is intentionally the design counterpart, not the API reference.
